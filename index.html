@@ -1,0 +1,1522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f8f1e4">
+<title>ことのは自叙伝</title>
+<style>
+  :root {
+    --bg: #f8f1e4; --bg2: #f0e6d2; --accent: #8b6914; --accent2: #5b3d8f;
+    --gold: #c9a84c; --gold-light: #e8c97a; --text: #2c1a0e; --muted: #8a6a50;
+    --card: #fff9ef; --border: #e0cba0; --kotonoha: #5b3d8f; --user: #8b6914;
+    --cream: #fdf8f0; --warm-white: #fffcf5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%; overflow: hidden;
+    background: linear-gradient(135deg, var(--bg), var(--bg2));
+    color: var(--text);
+    font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', Georgia, serif;
+    font-size: 17px; line-height: 1.8;
+  }
+  body { display: flex; flex-direction: column; }
+  .screen { display: none; flex: 1; flex-direction: column; min-height: 0; }
+  .screen.active { display: flex; }
+
+  /* ========== Dashboard (Bookshelf) ========== */
+  #screen-dashboard { padding: 24px 20px; overflow-y: auto; }
+  .dash-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dash-header .logo-icon {
+    width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2em;
+    background: linear-gradient(135deg, var(--gold), var(--accent2));
+    border-radius: 14px;
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(91,61,143,0.2);
+  }
+  .dash-header .greeting { flex: 1; }
+  .dash-header h1 {
+    font-size: 1.3em;
+    color: var(--accent2);
+    margin-bottom: 2px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .version-badge {
+    font-size: 0.55em; padding: 3px 10px; border-radius: 12px;
+    background: rgba(201,168,76,0.15); border: 1px solid var(--gold);
+    color: var(--gold); font-weight: normal; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .dash-header p { color: var(--muted); font-size: 0.85em; }
+
+  .new-chat-btn {
+    display: block; width: 100%; padding: 22px;
+    background: linear-gradient(135deg, var(--accent2), var(--gold));
+    color: #fff; border: none; border-radius: 16px;
+    font-size: 1.1em; font-weight: bold; cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 25px rgba(91,61,143,0.25);
+    transition: transform 0.15s; margin-bottom: 20px;
+  }
+  .new-chat-btn:active { transform: scale(0.98); }
+
+  /* ========== Chapter Progress (Bookshelf) ========== */
+  .chapter-progress {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; margin-bottom: 20px;
+  }
+  .chapter-progress-title {
+    font-size: 0.88em; color: var(--accent2); font-weight: bold;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .chapter-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid rgba(224,203,160,0.3);
+  }
+  .chapter-item:last-child { border-bottom: none; }
+  .chapter-color {
+    width: 28px; height: 28px; border-radius: 6px;
+    flex-shrink: 0; transition: background 0.5s;
+  }
+  .chapter-name { flex: 1; font-size: 0.85em; color: var(--text); }
+  .chapter-score { font-size: 0.78em; font-weight: bold; min-width: 40px; text-align: right; }
+  .score-0 { color: #ccc; }
+  .score-low { color: var(--muted); }
+  .score-mid { color: var(--accent); }
+  .score-high { color: var(--accent2); }
+  .score-max { color: var(--gold); }
+
+  /* ========== History ========== */
+  .history-section-title {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 8px 0 12px; color: var(--accent2); font-size: 0.95em;
+  }
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .history-card-wrapper { position: relative; }
+  .history-card {
+    display: block; width: 100%;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 52px 14px 16px;
+    cursor: pointer; font-family: inherit; text-align: left; color: var(--text);
+    transition: all 0.2s;
+  }
+  .history-card:active { background: rgba(91,61,143,0.06); border-color: var(--accent2); }
+  .history-title { font-weight: bold; color: var(--accent2); font-size: 0.95em; margin-bottom: 4px; }
+  .history-meta { font-size: 0.75em; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+  .history-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.68em; font-weight: bold; }
+  .badge-active { background: rgba(91,61,143,0.12); color: var(--accent2); border: 1px solid var(--accent2); }
+  .badge-done { background: rgba(201,168,76,0.15); color: var(--gold); border: 1px solid var(--gold); }
+  .history-empty {
+    text-align: center; padding: 40px 20px; color: var(--muted);
+    background: rgba(0,0,0,0.03); border-radius: 12px; border: 1px dashed var(--border);
+  }
+  .delete-btn {
+    position: absolute; top: 50%; right: 12px; transform: translateY(-50%);
+    background: rgba(255,80,100,0.08); color: #cc4444; border: 1px solid rgba(255,80,100,0.3);
+    border-radius: 50%; width: 34px; height: 34px; cursor: pointer; font-size: 1em;
+  }
+
+  /* ========== Setup (First time) ========== */
+  #screen-setup { padding: 24px 22px; overflow-y: auto; }
+  #screen-setup header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+  }
+  #screen-setup header .setup-icon {
+    width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;
+    font-size: 2em; background: linear-gradient(135deg, var(--gold), var(--accent2));
+    border-radius: 50%; color: #fff;
+  }
+  #screen-setup header h2 { font-size: 1.1em; color: var(--accent2); }
+  #screen-setup header p { color: var(--muted); font-size: 0.82em; }
+  .setup-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; margin-bottom: 14px;
+  }
+  .setup-card h3 { color: var(--accent2); font-size: 0.95em; margin-bottom: 12px; }
+  .setup-card input {
+    width: 100%; padding: 14px 16px;
+    background: var(--warm-white); border: 2px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 1.05em; font-family: inherit;
+  }
+  .setup-card input:focus { outline: none; border-color: var(--accent2); }
+  .reader-options { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .reader-btn {
+    background: var(--warm-white); border: 2px solid var(--border);
+    border-radius: 12px; padding: 14px 16px; color: var(--text);
+    cursor: pointer; text-align: left; font-family: inherit; font-size: 0.92em;
+    transition: all 0.2s;
+  }
+  .reader-btn:active { transform: scale(0.98); }
+  .reader-btn.active {
+    background: rgba(91,61,143,0.08); border-color: var(--accent2);
+    box-shadow: 0 0 12px rgba(91,61,143,0.15);
+  }
+  .reader-btn .reader-label { font-weight: bold; color: var(--accent2); margin-bottom: 2px; }
+  .reader-btn .reader-desc { font-size: 0.78em; color: var(--muted); }
+
+  /* ========== Chat ========== */
+  .chat-header {
+    padding: 14px 16px;
+    background: rgba(248,241,228,0.96); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  }
+  .chat-header .back-btn {
+    background: transparent; border: 1px solid var(--accent2);
+    color: var(--accent2); padding: 6px 10px; border-radius: 16px;
+    font-size: 0.78em; cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .chat-header .chat-icon {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4em; background: linear-gradient(135deg, var(--gold), var(--accent2));
+    color: #fff;
+  }
+  .chat-header .info { flex: 1; min-width: 0; }
+  .chat-header .info-title { font-size: 0.78em; color: var(--muted); }
+  .chat-header .info-topic {
+    font-weight: bold; color: var(--accent2); font-size: 0.95em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chat-header .end-btn {
+    background: var(--gold); color: #fff; border: none;
+    padding: 8px 12px; border-radius: 18px; font-size: 0.8em;
+    font-weight: bold; cursor: pointer; flex-shrink: 0; font-family: inherit;
+  }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 20px 16px; -webkit-overflow-scrolling: touch; }
+  .msg { margin-bottom: 14px; max-width: 85%; animation: slideIn 0.3s ease-out; }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg-ai { margin-right: auto; }
+  .msg-user { margin-left: auto; }
+  .msg-bubble {
+    padding: 12px 16px; border-radius: 18px;
+    line-height: 1.7; font-size: 0.98em; word-wrap: break-word;
+  }
+  .msg-ai .msg-bubble {
+    background: var(--card); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px; color: var(--text);
+  }
+  .msg-user .msg-bubble {
+    background: linear-gradient(135deg, rgba(91,61,143,0.12), rgba(201,168,76,0.12));
+    border: 1px solid rgba(91,61,143,0.3);
+    border-bottom-right-radius: 4px; color: var(--text);
+  }
+  .msg-typing { display: flex; gap: 5px; padding: 14px 18px; }
+  .msg-typing span {
+    width: 8px; height: 8px; background: var(--accent2);
+    border-radius: 50%; animation: typing 1.4s infinite;
+  }
+  .msg-typing span:nth-child(2) { animation-delay: 0.2s; }
+  .msg-typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+
+  /* ========== Kanji Confirm Overlay ========== */
+  .kanji-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4); z-index: 300;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .kanji-overlay.active { display: flex; }
+  .kanji-card {
+    background: var(--warm-white); border-radius: 18px; padding: 24px;
+    max-width: 360px; width: 100%; box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  }
+  .kanji-card h3 { color: var(--accent2); font-size: 1em; margin-bottom: 16px; text-align: center; }
+  .kanji-options { display: flex; flex-direction: column; gap: 10px; }
+  .kanji-btn {
+    background: var(--card); border: 2px solid var(--border); border-radius: 12px;
+    padding: 14px 18px; cursor: pointer; font-family: inherit; font-size: 0.95em;
+    color: var(--text); text-align: left; transition: all 0.15s;
+  }
+  .kanji-btn:active { transform: scale(0.97); border-color: var(--accent2); }
+  .kanji-btn .kanji-label { font-weight: bold; color: var(--accent2); font-size: 1.1em; }
+  .kanji-btn .kanji-reading { font-size: 0.78em; color: var(--muted); }
+
+  /* ========== Voice & Input ========== */
+  .voice-btn {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--card); border: 2px solid var(--accent2); color: var(--accent2);
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5em; transition: all 0.2s; font-family: inherit;
+  }
+  .voice-btn:active { transform: scale(0.92); }
+  .voice-btn.listening {
+    background: var(--accent2); color: #fff; border-color: var(--accent2);
+    animation: pulseMic 1.2s ease-in-out infinite;
+  }
+  @keyframes pulseMic {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(91,61,143,0.5); }
+    50% { box-shadow: 0 0 0 12px rgba(91,61,143,0); }
+  }
+  .mode-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; background: rgba(248,241,228,0.9);
+    border-top: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+  }
+  .mode-bar .mode-label { font-size: 0.68em; color: var(--muted); white-space: nowrap; min-width: 72px; }
+  .mode-group {
+    display: inline-flex; background: var(--card);
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .mode-chip {
+    background: transparent; border: none; color: var(--muted);
+    padding: 5px 11px; font-size: 0.72em; cursor: pointer;
+    font-family: inherit; white-space: nowrap; transition: all 0.15s;
+  }
+  .mode-chip + .mode-chip { border-left: 1px solid var(--border); }
+  .mode-chip.active {
+    background: linear-gradient(90deg, rgba(91,61,143,0.15), rgba(201,168,76,0.1));
+    color: var(--accent2); font-weight: bold;
+  }
+  .mode-speed {
+    margin-left: auto; background: transparent; border: 1px solid var(--border);
+    color: var(--muted); border-radius: 12px; padding: 4px 9px;
+    font-size: 0.68em; cursor: pointer; font-family: inherit;
+  }
+  .mode-speed.on { color: var(--gold); border-color: var(--gold); }
+  .chat-input-area {
+    padding: 12px 14px; background: rgba(248,241,228,0.96); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border); display: flex; gap: 8px;
+    align-items: flex-end; flex-shrink: 0;
+  }
+  .chat-input-area textarea {
+    flex: 1; padding: 12px 16px; background: var(--warm-white);
+    border: 2px solid var(--border); border-radius: 22px; color: var(--text);
+    font-size: 1em; font-family: inherit; resize: none;
+    min-height: 44px; max-height: 120px; line-height: 1.4;
+  }
+  .chat-input-area textarea:focus { outline: none; border-color: var(--accent2); }
+  .send-btn {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2), var(--gold));
+    color: #fff; border: none; font-size: 1.4em; cursor: pointer;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .send-btn:active { transform: scale(0.92); }
+  .send-btn:disabled { opacity: 0.4; }
+  body.input-mode-keyboard #voice-btn { display: none; }
+  body.input-mode-voice .chat-input-area textarea { flex: 0.6; }
+
+  /* ========== Progress Bar (in chat) ========== */
+  .progress-bar {
+    background: rgba(248,241,228,0.9); border-bottom: 1px solid var(--border);
+    padding: 8px 14px; flex-shrink: 0; cursor: pointer;
+    transition: background 0.2s; position: relative; overflow: visible;
+  }
+  .progress-bar:active { background: rgba(240,230,210,1); }
+  .progress-bar.celebrating { animation: celebrate 0.8s ease-out; }
+  @keyframes celebrate {
+    0%, 100% { background: rgba(248,241,228,0.9); }
+    50% { background: rgba(201,168,76,0.2); box-shadow: 0 0 25px rgba(201,168,76,0.3); }
+  }
+  .progress-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.72em; margin-bottom: 4px;
+  }
+  .progress-header .label { color: var(--accent2); font-weight: bold; }
+  .progress-header .value { color: var(--gold); font-weight: bold; }
+  .progress-header .label.pulsing { animation: labelPulse 0.8s ease-out; }
+  @keyframes labelPulse {
+    0% { transform: scale(1); } 30% { transform: scale(1.15); color: var(--gold); } 100% { transform: scale(1); }
+  }
+  .progress-track { height: 8px; border-radius: 4px; background: rgba(0,0,0,0.06); overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent2), var(--gold));
+    transition: width 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.2); position: relative;
+  }
+  .progress-fill::after {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: translateX(-100%);
+  }
+  .progress-fill.shimmer::after { animation: shimmer 1s ease-out; }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .sparkle {
+    position: absolute; pointer-events: none; font-size: 1.4em;
+    animation: sparkleFloat 1.4s ease-out forwards; z-index: 50;
+  }
+  @keyframes sparkleFloat {
+    0% { opacity: 0; transform: translateY(0) scale(0.5) rotate(0deg); }
+    30% { opacity: 1; transform: translateY(-12px) scale(1.2) rotate(180deg); }
+    100% { opacity: 0; transform: translateY(-40px) scale(0.8) rotate(360deg); }
+  }
+  .progress-increase-badge {
+    position: absolute; right: 14px; top: -8px;
+    background: var(--gold); color: #fff; font-size: 0.7em;
+    padding: 3px 10px; border-radius: 12px; font-weight: bold;
+    animation: badgePop 1.5s ease-out forwards; pointer-events: none;
+    box-shadow: 0 3px 10px rgba(201,168,76,0.5);
+  }
+  @keyframes badgePop {
+    0% { opacity: 0; transform: translateY(10px) scale(0.6); }
+    20% { opacity: 1; transform: translateY(0) scale(1.1); }
+    40% { transform: translateY(0) scale(1); } 80% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+  .progress-detail {
+    display: none; margin-top: 10px; grid-template-columns: repeat(2, 1fr);
+    gap: 4px 8px; font-size: 0.68em;
+  }
+  .progress-detail.open { display: grid; }
+  .progress-item { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+  .progress-item-label { color: var(--muted); }
+  .progress-item-score { font-weight: bold; }
+  .progress-item-score.zero { color: #bbb; }
+  .progress-item-score.low { color: var(--muted); }
+  .progress-item-score.mid { color: var(--accent); }
+  .progress-item-score.high { color: var(--accent2); }
+
+  /* ========== Session Summary ========== */
+  #screen-summary { overflow-y: auto; padding: 24px 22px; }
+  #screen-summary .summary-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+  }
+  #screen-summary .summary-header .sum-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6em; background: linear-gradient(135deg, var(--gold), var(--accent2)); color: #fff;
+  }
+  #screen-summary .summary-header h2 { color: var(--accent2); font-size: 1.05em; }
+  #summary-content {
+    background: var(--card); padding: 20px; border-radius: 14px;
+    border: 1px solid var(--border); font-size: 0.92em; line-height: 1.8;
+    color: var(--text); margin-bottom: 14px; white-space: pre-wrap;
+  }
+  .summary-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+  /* ========== Buttons ========== */
+  .btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(90deg, var(--accent2), var(--gold));
+    color: #fff; border: none; border-radius: 12px;
+    font-size: 1em; font-weight: bold; cursor: pointer; font-family: inherit;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-secondary { background: transparent; color: var(--accent2); border: 2px solid var(--accent2); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: rgba(44,26,14,0.92); color: var(--gold-light);
+    padding: 12px 22px; border-radius: 24px; font-size: 0.88em;
+    z-index: 200; border: 1px solid var(--gold);
+    opacity: 0; transition: opacity 0.3s; pointer-events: none;
+    max-width: 90%; text-align: center;
+  }
+  .toast.show { opacity: 1; }
+  .loader {
+    display: inline-block; width: 24px; height: 24px;
+    border: 3px solid rgba(91,61,143,0.2); border-top-color: var(--accent2);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 40px 22px; text-align: center;
+  }
+  .loading-card p { margin-top: 14px; color: var(--muted); font-size: 0.9em; }
+  .footer-tip {
+    text-align: center; color: var(--muted); font-size: 0.72em;
+    padding: 8px 16px; background: rgba(248,241,228,0.9); flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== DASHBOARD (default) ========== -->
+<section id="screen-dashboard" class="screen active">
+  <div class="dash-header">
+    <div class="logo-icon">&#x1F4D6;</div>
+    <div class="greeting">
+      <h1>ことのは自叙伝 <span class="version-badge">MVP 0.1</span></h1>
+      <p id="greeting-text">あなたの声が、本になる</p>
+    </div>
+  </div>
+
+  <button class="new-chat-btn" onclick="startNewSession()">
+    今日も話しましょう
+  </button>
+
+  <div class="chapter-progress" id="chapter-progress">
+    <div class="chapter-progress-title">本の色づき</div>
+    <div id="chapter-list"></div>
+  </div>
+
+  <div class="history-section-title">
+    <span>過去の会話</span>
+    <span id="history-count" style="color:var(--muted); font-size:0.75em;"></span>
+  </div>
+  <div id="dashboard-history" class="history-list"></div>
+</section>
+
+<!-- ========== SETUP (First time) ========== -->
+<section id="screen-setup" class="screen">
+  <header>
+    <div class="setup-icon">&#x1F4D6;</div>
+    <div>
+      <h2>はじめまして</h2>
+      <p>あなたの本を作るための準備をします</p>
+    </div>
+  </header>
+  <div class="setup-card">
+    <h3>お名前を教えてください</h3>
+    <input id="setup-name" type="text" placeholder="例: 田中 芳子">
+  </div>
+  <div class="setup-card">
+    <h3>この本を誰に読んでほしいですか?</h3>
+    <div class="reader-options">
+      <button class="reader-btn" data-reader="grandchildren" onclick="selectReader(this)">
+        <div class="reader-label">孫・子供に</div>
+        <div class="reader-desc">家族に自分の人生を伝えたい</div>
+      </button>
+      <button class="reader-btn" data-reader="business" onclick="selectReader(this)">
+        <div class="reader-label">会社の人・後輩に</div>
+        <div class="reader-desc">経営哲学や仕事の信念を残したい</div>
+      </button>
+      <button class="reader-btn" data-reader="self" onclick="selectReader(this)">
+        <div class="reader-label">自分のために</div>
+        <div class="reader-desc">人生の棚卸し・振り返りがしたい</div>
+      </button>
+      <button class="reader-btn" data-reader="undecided" onclick="selectReader(this)">
+        <div class="reader-label">まだ決まっていない</div>
+        <div class="reader-desc">とりあえず話してみたい</div>
+      </button>
+    </div>
+  </div>
+  <button id="setup-start-btn" class="btn" onclick="completeSetup()">はじめる</button>
+</section>
+
+<!-- ========== CHAT ========== -->
+<section id="screen-chat" class="screen">
+  <header class="chat-header">
+    <button class="back-btn" onclick="endSessionConfirm()">&#8592; 戻る</button>
+    <div class="chat-icon">&#x1F4D6;</div>
+    <div class="info">
+      <div class="info-title">ことのは</div>
+      <div class="info-topic" id="chat-topic">自叙伝インタビュー</div>
+    </div>
+    <button class="end-btn" id="end-btn">今日はここまで</button>
+  </header>
+  <div class="progress-bar" id="progress-bar" onclick="toggleProgressDetail()">
+    <div class="progress-header">
+      <span class="label" id="progress-label">本の色づき: 0%</span>
+      <span class="value" id="progress-msg-count">0 発言</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%;"></div>
+    </div>
+    <div class="progress-detail" id="progress-detail"></div>
+  </div>
+  <div class="chat-messages" id="messages"></div>
+  <div class="mode-bar" id="mode-bar-response">
+    <span class="mode-label">ことのはの応答</span>
+    <div class="mode-group">
+      <button type="button" class="mode-chip" data-resp="voice_text" onclick="setResponseMode('voice_text')">音声+文字</button>
+      <button type="button" class="mode-chip" data-resp="text_only" onclick="setResponseMode('text_only')">文字だけ</button>
+    </div>
+    <button type="button" class="mode-speed" id="tts-speed" onclick="cycleTTSSpeed()">速度 1.0x</button>
+  </div>
+  <div class="mode-bar" id="mode-bar-input">
+    <span class="mode-label">わたしの入力</span>
+    <div class="mode-group">
+      <button type="button" class="mode-chip" data-input="voice" onclick="setInputMode('voice')">声で話す</button>
+      <button type="button" class="mode-chip" data-input="keyboard" onclick="setInputMode('keyboard')">文字で書く</button>
+    </div>
+  </div>
+  <div class="chat-input-area">
+    <button class="voice-btn" id="voice-btn" title="音声入力">&#x1F3A4;</button>
+    <textarea id="chat-input" placeholder="話したいことを書いてください" rows="1"></textarea>
+    <button class="send-btn" id="send-btn">&#x25B6;</button>
+  </div>
+  <div class="footer-tip">疲れたら「今日はここまで」で終了できます</div>
+</section>
+
+<!-- ========== KANJI CONFIRM OVERLAY ========== -->
+<div class="kanji-overlay" id="kanji-overlay">
+  <div class="kanji-card">
+    <h3 id="kanji-question">「はせがわ」さんの漢字はどれですか?</h3>
+    <div class="kanji-options" id="kanji-options"></div>
+  </div>
+</div>
+
+<!-- ========== SESSION SUMMARY ========== -->
+<section id="screen-summary" class="screen">
+  <div class="summary-header">
+    <div class="sum-icon">&#x2728;</div>
+    <div>
+      <h2>今日のまとめ</h2>
+      <p style="color:var(--muted); font-size:0.8em;">今日話してくれたこと</p>
+    </div>
+  </div>
+  <div id="summary-loading" class="loading-card"><div class="loader"></div><p>まとめを作成しています...</p></div>
+  <div id="summary-result" style="display:none;">
+    <div id="summary-content"></div>
+    <div class="summary-actions">
+      <button class="btn" onclick="showScreen('screen-dashboard')">本棚に戻る</button>
+    </div>
+  </div>
+</section>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ============================================================
+// CONFIG — Risa's Studio API をそのまま流用（Option B）
+// ============================================================
+const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev";
+
+// ============================================================
+// 14 CATEGORIES (自叙伝取れ高)
+// ============================================================
+const CATEGORIES = [
+  { key: "childhood",       label: "幼少期・家族構成",   weight: 3 },
+  { key: "school",          label: "学生時代・友人",     weight: 2 },
+  { key: "career_start",    label: "就職・キャリア",     weight: 3 },
+  { key: "turning_point",   label: "人生の転機・決断",   weight: 4 },
+  { key: "love_partner",    label: "恋愛・パートナー",   weight: 2 },
+  { key: "family_children", label: "家族・子育て",       weight: 3 },
+  { key: "greatest_success",label: "最大の成功・誇り",   weight: 4 },
+  { key: "greatest_failure",label: "最大の失敗・後悔",   weight: 4 },
+  { key: "travel",          label: "旅・移住・冒険",     weight: 1 },
+  { key: "work_philosophy", label: "仕事の哲学・信念",   weight: 3 },
+  { key: "gratitude",       label: "感謝している人",     weight: 2 },
+  { key: "message_next_gen",label: "次世代へのメッセージ",weight: 4 },
+  { key: "future_dreams",   label: "これからやりたいこと",weight: 2 },
+  { key: "life_in_a_word",  label: "人生を一言で表すと", weight: 2 },
+];
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  userName: null,
+  readerType: null,
+  sessionId: null,
+  sessionCount: 0,
+  conversation: [],
+  lifeFacts: [],
+  sessionSummaries: [],
+  chapterScores: {},
+  isGenerating: false,
+  lastProgress: 0,
+};
+
+// ============================================================
+// LOCAL STORAGE (MVP: no auth, localStorage only)
+// ============================================================
+function loadUserProfile() {
+  const profile = JSON.parse(localStorage.getItem("kotonoha_profile") || "null");
+  if (profile) {
+    state.userName = profile.name;
+    state.readerType = profile.readerType;
+  }
+  state.lifeFacts = JSON.parse(localStorage.getItem("kotonoha_facts") || "[]");
+  state.sessionSummaries = JSON.parse(localStorage.getItem("kotonoha_summaries") || "[]");
+  state.chapterScores = JSON.parse(localStorage.getItem("kotonoha_chapters") || "{}");
+  state.sessionCount = parseInt(localStorage.getItem("kotonoha_session_count") || "0", 10);
+}
+
+function saveUserProfile() {
+  localStorage.setItem("kotonoha_profile", JSON.stringify({
+    name: state.userName, readerType: state.readerType
+  }));
+}
+
+function saveLifeFacts() { localStorage.setItem("kotonoha_facts", JSON.stringify(state.lifeFacts)); }
+function saveSessionSummaries() { localStorage.setItem("kotonoha_summaries", JSON.stringify(state.sessionSummaries)); }
+function saveChapterScores() { localStorage.setItem("kotonoha_chapters", JSON.stringify(state.chapterScores)); }
+function saveSessions() { localStorage.setItem("kotonoha_sessions", JSON.stringify(getSessions())); }
+
+function getSessions() {
+  return JSON.parse(localStorage.getItem("kotonoha_sessions") || "[]");
+}
+
+// ============================================================
+// SCREENS
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  if (id === "screen-dashboard") renderDashboard();
+  if (id === "screen-chat") {
+    applyResponseModeUI();
+    applyInputModeUI();
+  }
+}
+
+// ============================================================
+// SETUP (first time)
+// ============================================================
+let selectedReaderType = null;
+
+function selectReader(btn) {
+  document.querySelectorAll(".reader-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedReaderType = btn.dataset.reader;
+}
+
+function completeSetup() {
+  const name = document.getElementById("setup-name").value.trim();
+  if (!name) { showToast("お名前を入力してください"); return; }
+  if (!selectedReaderType) { showToast("読者を選んでください"); return; }
+  state.userName = name;
+  state.readerType = selectedReaderType;
+  saveUserProfile();
+  showScreen("screen-dashboard");
+  showToast(`${name}さん、よろしくお願いします`);
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  document.getElementById("greeting-text").textContent =
+    state.userName ? `${state.userName}さんの自叙伝` : "あなたの声が、本になる";
+  renderChapterProgress();
+  renderSessionHistory();
+}
+
+function renderChapterProgress() {
+  const list = document.getElementById("chapter-list");
+  list.innerHTML = CATEGORIES.map(cat => {
+    const score = state.chapterScores[cat.key] || 0;
+    const color = scoreToColor(score);
+    const cls = score === 0 ? "score-0" : score < 30 ? "score-low" : score < 60 ? "score-mid" : score < 90 ? "score-high" : "score-max";
+    return `<div class="chapter-item">
+      <div class="chapter-color" style="background:${color};"></div>
+      <span class="chapter-name">${cat.label}</span>
+      <span class="chapter-score ${cls}">${score > 0 ? getScoreLabel(score) : "---"}</span>
+    </div>`;
+  }).join("");
+}
+
+function scoreToColor(score) {
+  if (score === 0) return "#e8e0d0";
+  if (score < 30) return "#d4c4a0";
+  if (score < 60) return "#b8976a";
+  if (score < 90) return "#8b6914";
+  return "linear-gradient(135deg, #c9a84c, #5b3d8f)";
+}
+
+function getScoreLabel(score) {
+  if (score < 30) return "ほんのり";
+  if (score < 60) return "色づき中";
+  if (score < 90) return "しっかり";
+  return "完成";
+}
+
+function renderSessionHistory() {
+  const sessions = getSessions();
+  const container = document.getElementById("dashboard-history");
+  document.getElementById("history-count").textContent = sessions.length ? `${sessions.length}回` : "";
+  if (!sessions.length) {
+    container.innerHTML = `<div class="history-empty">まだ会話履歴がありません<br>「今日も話しましょう」から始めてください</div>`;
+    return;
+  }
+  container.innerHTML = sessions.slice().reverse().map((s, i) => {
+    const dateStr = new Date(s.date).toLocaleDateString("ja-JP");
+    const msgCount = s.messageCount || 0;
+    return `<div class="history-card-wrapper">
+      <button class="history-card" onclick="resumeSession(${sessions.length - 1 - i})">
+        <div class="history-title">第${s.sessionNum}回 ${dateStr}</div>
+        <div class="history-meta">
+          <span>${msgCount}往復の会話</span>
+          <span class="history-badge ${s.completed ? 'badge-done' : 'badge-active'}">${s.completed ? 'まとめ済' : '途中'}</span>
+        </div>
+      </button>
+      <button class="delete-btn" onclick="event.stopPropagation(); deleteSessionLocal(${sessions.length - 1 - i})" title="削除">&#x1F5D1;</button>
+    </div>`;
+  }).join("");
+}
+
+function deleteSessionLocal(idx) {
+  const sessions = getSessions();
+  const s = sessions[idx];
+  if (!confirm(`第${s.sessionNum}回の会話を削除しますか?`)) return;
+  sessions.splice(idx, 1);
+  localStorage.setItem("kotonoha_sessions", JSON.stringify(sessions));
+  renderDashboard();
+  showToast("削除しました");
+}
+
+// ============================================================
+// SESSION START
+// ============================================================
+function startNewSession() {
+  if (!state.userName) {
+    showScreen("screen-setup");
+    return;
+  }
+  state.sessionCount++;
+  localStorage.setItem("kotonoha_session_count", String(state.sessionCount));
+  state.conversation = [];
+  state.sessionId = "local_" + Date.now();
+
+  showScreen("screen-chat");
+  document.getElementById("messages").innerHTML = "";
+  document.getElementById("chat-topic").textContent = `第${state.sessionCount}回`;
+  resetProgressMeter();
+
+  // First message from Kotonoha
+  const phase = getPhase();
+  let firstMsg;
+  if (state.sessionCount === 1) {
+    firstMsg = `こんにちは、${state.userName}さん！\n\n私は「ことのは」、あなたの人生のお話を聞く記者です。\nこれから少しずつ、あなただけの本を作っていきましょう。\n\nまず…今朝のご飯は何を召し上がりましたか?`;
+  } else if (phase === 1) {
+    const lastSummary = state.sessionSummaries[state.sessionSummaries.length - 1];
+    const hook = lastSummary ? `\n\n前回は${lastSummary.topics?.[0] || "いろいろなこと"}について聞かせてもらいました。` : "";
+    firstMsg = `${state.userName}さん、こんにちは！${hook}\n\n今日はどんなお話を聞かせてもらえますか?`;
+  } else if (phase === 2) {
+    firstMsg = `${state.userName}さん、こんにちは！\n\nこれまでのお話から、本の大まかな流れが見えてきました。\n今日はその辺りも一緒に考えながら、お話を聞かせてください。`;
+  } else {
+    const weakest = getWeakestChapter();
+    firstMsg = `${state.userName}さん、こんにちは！\n\n本の色づきを見てみると、「${weakest.label}」のところがまだ少し薄いですね。\n\n今日はそのあたりの話を聞かせてもらえますか?\nそれとも、別に話したいことがありますか?`;
+  }
+  addMessage("ai", firstMsg);
+}
+
+function getPhase() {
+  if (state.sessionCount <= 3) return 1;
+  if (state.sessionCount <= 5) return 2;
+  return 3;
+}
+
+function getWeakestChapter() {
+  let min = Infinity, weakest = CATEGORIES[0];
+  for (const cat of CATEGORIES) {
+    const score = (state.chapterScores[cat.key] || 0) * cat.weight;
+    if (score < min) { min = score; weakest = cat; }
+  }
+  return weakest;
+}
+
+// ============================================================
+// SYSTEM PROMPT (Option B: built in frontend)
+// ============================================================
+function buildSystemPrompt() {
+  const phase = getPhase();
+  const factsStr = state.lifeFacts.length
+    ? state.lifeFacts.map(f => `- ${f.kanji || f.reading} (${f.reading}): ${f.relation}`).join("\n")
+    : "(まだ確認済みの固有名詞はありません)";
+  const summariesStr = state.sessionSummaries.length
+    ? state.sessionSummaries.map((s, i) => `セッション${i + 1}: ${s.summary}`).join("\n")
+    : "(初回セッション)";
+  const scoresStr = CATEGORIES.map(c =>
+    `${c.label}: ${state.chapterScores[c.key] || 0}%`
+  ).join(", ");
+
+  return `あなたは「ことのは」という自叙伝専門のAI記者です。
+温かく、聡明で、相手の話に心から興味を持っています。
+プロのジャーナリストとしての傾聴スキルと、自叙伝作家としての文章構成力を持っています。
+
+【会話原則】
+1. 質問は必ず1つだけ。複合質問は禁止。
+2. 共感・驚き・好奇心を自然に表現する。
+3. 相手のペースに合わせる。急かさない。
+4. 固有名詞（人名・地名・会社名等）が出たら、読み仮名と漢字を確認する。「○○さんの漢字を確認させてください」と聞く。
+5. 感情的な発言には共感を先に示し、その後質問する。
+6. 五感に関する質問を積極的に行う（「その時どんな匂いがしましたか?」等）。
+
+【現在のフェーズ】Phase ${phase}
+${phase === 1 ? "出会いフェーズ: 日常の話から自然に人生の話へ誘導。「本を作る」「章立て」という言葉は使わない。" : ""}
+${phase === 2 ? "章立て提案フェーズ: 自然なタイミングで本の構成を提案。強制せず「一緒に決める」スタンスで。" : ""}
+${phase === 3 ? "取れ高追跡フェーズ: スコアが低い章へ自然に誘導するが強制しない。" : ""}
+
+【ユーザー情報】
+名前: ${state.userName}
+読者設定: ${state.readerType}
+セッション回数: ${state.sessionCount}
+
+【確認済み固有名詞】
+${factsStr}
+
+【過去セッション要約】
+${summariesStr}
+
+【現在の取れ高状況】
+${scoresStr}
+
+【禁止事項】
+- パーセント表示（「80%完成」等）を口に出さない
+- 章番号を数字で言わない
+- 取り調べのような畳み掛け質問
+- 相手を急かす表現
+- 事実の捏造`;
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+function addMessage(role, content) {
+  state.conversation.push({ role, content });
+  const messages = document.getElementById("messages");
+  const msgDiv = document.createElement("div");
+  msgDiv.className = `msg msg-${role === "ai" ? "ai" : "user"}`;
+  msgDiv.innerHTML = `<div class="msg-bubble">${escapeHtml(content)}</div>`;
+  messages.appendChild(msgDiv);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function showTyping() {
+  const messages = document.getElementById("messages");
+  const typing = document.createElement("div");
+  typing.className = "msg msg-ai";
+  typing.id = "typing-indicator";
+  typing.innerHTML = `<div class="msg-bubble msg-typing"><span></span><span></span><span></span></div>`;
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+}
+function hideTyping() { const t = document.getElementById("typing-indicator"); if (t) t.remove(); }
+
+const MIN_THINKING_MS = 3000;
+function thinkingDelay(startTime) {
+  const elapsed = Date.now() - startTime;
+  const remaining = MIN_THINKING_MS - elapsed;
+  return remaining > 0 ? new Promise(r => setTimeout(r, remaining)) : Promise.resolve();
+}
+
+document.getElementById("send-btn").onclick = sendMessage;
+document.getElementById("chat-input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !isMobile()) { e.preventDefault(); sendMessage(); }
+});
+document.getElementById("chat-input").addEventListener("input", autoGrow);
+function autoGrow() {
+  const ta = document.getElementById("chat-input");
+  ta.style.height = "auto";
+  ta.style.height = Math.min(120, ta.scrollHeight) + "px";
+}
+function isMobile() { return /iPhone|iPad|Android/i.test(navigator.userAgent); }
+
+async function sendMessage() {
+  await unlockAudioOnce();
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text || state.isGenerating) return;
+  if (isListening) {
+    try { recognition && recognition.stop(); } catch(e){}
+    stopVoiceInput();
+  }
+  input.value = "";
+  input.style.height = "auto";
+  input.blur();
+  addMessage("user", text);
+  state.isGenerating = true;
+  const voiceMode = isTTSEnabled();
+  const thinkStart = Date.now();
+  showTyping();
+  try {
+    const reply = await callKotonohaChat();
+    await thinkingDelay(thinkStart);
+    if (voiceMode) {
+      const ttsData = await fetchTTSData(reply);
+      hideTyping();
+      addMessage("ai", reply);
+      playTTSData(ttsData, reply);
+    } else {
+      hideTyping();
+      addMessage("ai", reply);
+    }
+    // Auto-save session
+    autoSaveCurrentSession();
+    // Update progress (local analysis)
+    localAnalyzeProgress();
+  } catch (e) {
+    hideTyping();
+    addMessage("ai", "ごめんなさい、うまくお話を聞き取れませんでした。もう一度お願いできますか?");
+  } finally {
+    state.isGenerating = false;
+  }
+}
+
+async function callKotonohaChat() {
+  // Build the full conversation with system prompt injected
+  const systemPrompt = buildSystemPrompt();
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...state.conversation.map(m => ({
+      role: m.role === "ai" ? "assistant" : "user",
+      content: m.content
+    }))
+  ];
+
+  const res = await fetch(`${API_BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation: messages,
+      persona: "kotonoha"
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.reply;
+}
+
+// ============================================================
+// LOCAL PROGRESS ANALYSIS (no Worker API needed)
+// ============================================================
+function localAnalyzeProgress() {
+  const allText = state.conversation
+    .filter(m => m.role === "user")
+    .map(m => m.content).join(" ");
+
+  const keywords = {
+    childhood: ["子供の頃", "幼少", "小さい頃", "生まれ", "育った", "父", "母", "兄弟", "姉妹", "家族"],
+    school: ["学校", "学生", "部活", "友達", "先生", "高校", "大学", "中学", "小学"],
+    career_start: ["就職", "入社", "仕事", "会社", "キャリア", "最初の"],
+    turning_point: ["転機", "決断", "変わった", "人生が変わった", "大きな"],
+    love_partner: ["結婚", "妻", "夫", "彼女", "彼氏", "出会い", "恋"],
+    family_children: ["子供", "息子", "娘", "子育て", "孫", "家庭"],
+    greatest_success: ["成功", "やり遂げた", "誇り", "うまくいった", "一番の"],
+    greatest_failure: ["失敗", "後悔", "つらかった", "倒産", "挫折"],
+    travel: ["旅行", "旅", "海外", "移住", "引っ越し"],
+    work_philosophy: ["信念", "哲学", "こだわり", "大切にし", "モットー"],
+    gratitude: ["感謝", "おかげ", "ありがとう", "お世話になった"],
+    message_next_gen: ["伝えたい", "メッセージ", "若い人", "次の世代"],
+    future_dreams: ["夢", "これから", "やりたい", "目標", "将来"],
+    life_in_a_word: ["一言で", "人生とは", "座右の銘"],
+  };
+
+  const newScores = { ...state.chapterScores };
+  for (const [key, words] of Object.entries(keywords)) {
+    let hits = 0;
+    for (const w of words) {
+      if (allText.includes(w)) hits++;
+    }
+    const score = Math.min(100, (newScores[key] || 0) + hits * 15);
+    newScores[key] = score;
+  }
+  state.chapterScores = newScores;
+  saveChapterScores();
+  renderProgressMeter();
+}
+
+// ============================================================
+// PROGRESS METER (in-chat)
+// ============================================================
+function resetProgressMeter() {
+  state.lastProgress = 0;
+  document.getElementById("progress-fill").style.width = "0%";
+  document.getElementById("progress-label").textContent = "本の色づき: 0%";
+  document.getElementById("progress-msg-count").textContent = "0 発言";
+  document.getElementById("progress-detail").innerHTML = "";
+  document.getElementById("progress-detail").classList.remove("open");
+}
+
+function renderProgressMeter() {
+  let totalWeighted = 0, totalWeight = 0;
+  for (const cat of CATEGORIES) {
+    totalWeighted += (state.chapterScores[cat.key] || 0) * cat.weight;
+    totalWeight += 100 * cat.weight;
+  }
+  const progress = Math.round(totalWeighted / totalWeight * 100);
+  const prev = state.lastProgress || 0;
+  const delta = progress - prev;
+
+  const fill = document.getElementById("progress-fill");
+  const label = document.getElementById("progress-label");
+  const bar = document.getElementById("progress-bar");
+
+  label.textContent = `本の色づき: ${progress}%`;
+  fill.style.width = progress + "%";
+  const userMsgs = state.conversation.filter(m => m.role === "user").length;
+  document.getElementById("progress-msg-count").textContent = `${userMsgs} 発言`;
+
+  if (delta >= 1) {
+    fill.classList.remove("shimmer"); void fill.offsetWidth; fill.classList.add("shimmer");
+    bar.classList.remove("celebrating"); void bar.offsetWidth; bar.classList.add("celebrating");
+    label.classList.remove("pulsing"); void label.offsetWidth; label.classList.add("pulsing");
+    spawnSparkles(bar, delta);
+    showDeltaBadge(bar, delta);
+  }
+  state.lastProgress = progress;
+
+  const detail = document.getElementById("progress-detail");
+  detail.innerHTML = CATEGORIES.map(cat => {
+    const score = state.chapterScores[cat.key] || 0;
+    const cls = score === 0 ? "zero" : score < 30 ? "low" : score < 60 ? "mid" : "high";
+    return `<div class="progress-item">
+      <span class="progress-item-label">${cat.label}</span>
+      <span class="progress-item-score ${cls}">${score > 0 ? getScoreLabel(score) : "---"}</span>
+    </div>`;
+  }).join("");
+}
+
+function spawnSparkles(container, intensity) {
+  const count = Math.min(6, Math.max(3, Math.floor(intensity / 3)));
+  const sparkleChars = ["&#x2728;", "&#x1F338;", "&#x2B50;", "&#x1F4AB;", "&#x1F4D6;"];
+  const rect = container.getBoundingClientRect();
+  for (let i = 0; i < count; i++) {
+    const sparkle = document.createElement("div");
+    sparkle.className = "sparkle";
+    sparkle.innerHTML = sparkleChars[Math.floor(Math.random() * sparkleChars.length)];
+    sparkle.style.left = (20 + Math.random() * (rect.width - 40)) + "px";
+    sparkle.style.bottom = (8 + Math.random() * 10) + "px";
+    sparkle.style.animationDelay = (i * 0.08) + "s";
+    container.appendChild(sparkle);
+    setTimeout(() => sparkle.remove(), 1500 + i * 80);
+  }
+}
+
+function showDeltaBadge(container, delta) {
+  const badge = document.createElement("div");
+  badge.className = "progress-increase-badge";
+  badge.textContent = `+${delta}%`;
+  container.appendChild(badge);
+  setTimeout(() => badge.remove(), 1600);
+}
+
+function toggleProgressDetail() {
+  document.getElementById("progress-detail").classList.toggle("open");
+}
+
+// ============================================================
+// SESSION MANAGEMENT (local)
+// ============================================================
+function autoSaveCurrentSession() {
+  const sessions = getSessions();
+  const existing = sessions.findIndex(s => s.id === state.sessionId);
+  const data = {
+    id: state.sessionId,
+    sessionNum: state.sessionCount,
+    date: new Date().toISOString(),
+    conversation: state.conversation,
+    messageCount: state.conversation.filter(m => m.role === "user").length,
+    completed: false,
+  };
+  if (existing >= 0) sessions[existing] = data;
+  else sessions.push(data);
+  localStorage.setItem("kotonoha_sessions", JSON.stringify(sessions));
+}
+
+function resumeSession(idx) {
+  const sessions = getSessions();
+  const s = sessions[idx];
+  if (!s) return;
+  state.sessionId = s.id;
+  state.sessionCount = s.sessionNum;
+  state.conversation = [];
+  showScreen("screen-chat");
+  document.getElementById("messages").innerHTML = "";
+  document.getElementById("chat-topic").textContent = `第${s.sessionNum}回`;
+  resetProgressMeter();
+  for (const msg of s.conversation) addMessage(msg.role, msg.content);
+  localAnalyzeProgress();
+  showToast(`第${s.sessionNum}回の会話を復元しました`);
+}
+
+// ============================================================
+// END SESSION
+// ============================================================
+function endSessionConfirm() {
+  if (state.conversation.length < 2) {
+    showScreen("screen-dashboard");
+    return;
+  }
+  if (confirm("今日の会話を終了しますか?")) {
+    endSession();
+  }
+}
+
+document.getElementById("end-btn").onclick = () => {
+  if (state.conversation.length < 4) {
+    if (!confirm("まだお話が短いですが、今日はここまでにしますか?")) return;
+  }
+  endSession();
+};
+
+async function endSession() {
+  // Mark session as completed
+  const sessions = getSessions();
+  const existing = sessions.findIndex(s => s.id === state.sessionId);
+  if (existing >= 0) {
+    sessions[existing].completed = true;
+    sessions[existing].conversation = state.conversation;
+    sessions[existing].messageCount = state.conversation.filter(m => m.role === "user").length;
+    localStorage.setItem("kotonoha_sessions", JSON.stringify(sessions));
+  }
+
+  // Generate summary
+  showScreen("screen-summary");
+  document.getElementById("summary-loading").style.display = "block";
+  document.getElementById("summary-result").style.display = "none";
+
+  try {
+    const summary = await generateSessionSummary();
+    state.sessionSummaries.push({
+      sessionNum: state.sessionCount,
+      summary: summary,
+      date: new Date().toISOString(),
+      topics: extractTopics(state.conversation),
+    });
+    saveSessionSummaries();
+    document.getElementById("summary-content").textContent = summary;
+    document.getElementById("summary-loading").style.display = "none";
+    document.getElementById("summary-result").style.display = "block";
+  } catch (e) {
+    document.getElementById("summary-content").textContent = "今日もたくさんお話を聞かせていただきました。ありがとうございました。";
+    document.getElementById("summary-loading").style.display = "none";
+    document.getElementById("summary-result").style.display = "block";
+  }
+}
+
+async function generateSessionSummary() {
+  const convText = state.conversation.map(m =>
+    `${m.role === "ai" ? "ことのは" : state.userName}: ${m.content}`
+  ).join("\n");
+
+  const summaryPrompt = `以下の会話を200字以内で要約してください。話された主要なエピソードと出てきた感情を含めてください。\n\n${convText}`;
+
+  const res = await fetch(`${API_BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      conversation: [
+        { role: "system", content: "あなたは会話の要約を作成するアシスタントです。温かみのある文体で200字以内にまとめてください。" },
+        { role: "user", content: summaryPrompt }
+      ],
+      persona: "kotonoha"
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.reply;
+}
+
+function extractTopics(conversation) {
+  const text = conversation.filter(m => m.role === "user").map(m => m.content).join(" ");
+  const topics = [];
+  const topicKeywords = {
+    "幼少期": ["子供の頃", "小さい頃", "生まれ"],
+    "家族": ["父", "母", "兄弟", "姉妹", "家族"],
+    "学校": ["学校", "学生", "部活"],
+    "仕事": ["仕事", "会社", "就職"],
+    "結婚": ["結婚", "妻", "夫"],
+  };
+  for (const [topic, words] of Object.entries(topicKeywords)) {
+    if (words.some(w => text.includes(w))) topics.push(topic);
+  }
+  return topics.length ? topics : ["日常の話"];
+}
+
+// ============================================================
+// KANJI CONFIRM UI
+// ============================================================
+function showKanjiConfirm(reading, candidates, callback) {
+  const overlay = document.getElementById("kanji-overlay");
+  document.getElementById("kanji-question").textContent = `「${reading}」の漢字はどれですか?`;
+  const options = document.getElementById("kanji-options");
+  options.innerHTML = candidates.map((c, i) => `
+    <button class="kanji-btn" onclick="selectKanji(${i})">
+      <div class="kanji-label">${String.fromCharCode(65 + i)}: ${c.kanji}</div>
+      <div class="kanji-reading">${c.description || ""}</div>
+    </button>
+  `).join("") + `
+    <button class="kanji-btn" onclick="selectKanji(-1)">
+      <div class="kanji-label">その他</div>
+      <div class="kanji-reading">上記以外の漢字です</div>
+    </button>
+  `;
+  overlay.classList.add("active");
+  window._kanjiCallback = callback;
+  window._kanjiCandidates = candidates;
+}
+
+function selectKanji(idx) {
+  const overlay = document.getElementById("kanji-overlay");
+  overlay.classList.remove("active");
+  if (window._kanjiCallback) {
+    const selected = idx >= 0 ? window._kanjiCandidates[idx] : null;
+    window._kanjiCallback(selected);
+  }
+}
+
+// ============================================================
+// VOICE (Web Speech API) — from Risa's Studio
+// ============================================================
+let recognition = null;
+let isListening = false;
+let silenceTimer = null;
+let finalTranscript = "";
+const SILENCE_TIMEOUT_MS = 10000;
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const rec = new SR();
+  rec.lang = "ja-JP";
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+  return rec;
+}
+
+function resetSilenceTimer() {
+  if (silenceTimer) clearTimeout(silenceTimer);
+  silenceTimer = setTimeout(() => {
+    showToast("10秒間発言なし - マイク停止");
+    try { recognition && recognition.stop(); } catch (e) {}
+  }, SILENCE_TIMEOUT_MS);
+}
+
+function startVoiceInput() {
+  stopCurrentAudio(); currentAudio = null;
+  if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e){} }
+  if (recognition) { try { recognition.abort(); } catch(e){} recognition = null; }
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+  recognition = initSpeechRecognition();
+  if (!recognition) { showToast("お使いのブラウザは音声入力に対応していません"); return; }
+  const btn = document.getElementById("voice-btn");
+  const input = document.getElementById("chat-input");
+  finalTranscript = input.value || "";
+  recognition.onstart = () => {
+    isListening = true; btn.classList.add("listening");
+    btn.innerHTML = "&#x23FA;";
+    showToast("話してください (10秒静かで自動停止)");
+    resetSilenceTimer();
+  };
+  recognition.onresult = (e) => {
+    let interim = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const transcript = e.results[i][0].transcript;
+      if (e.results[i].isFinal) finalTranscript += transcript;
+      else interim += transcript;
+    }
+    input.value = finalTranscript + interim;
+    input.style.height = "auto";
+    input.style.height = Math.min(120, input.scrollHeight) + "px";
+    resetSilenceTimer();
+  };
+  recognition.onerror = (e) => {
+    if (e.error === "no-speech") return;
+    if (e.error === "not-allowed") showToast("マイクの使用が許可されていません");
+    else if (e.error !== "aborted") showToast("音声エラー: " + e.error);
+    stopVoiceInput();
+  };
+  recognition.onend = () => { stopVoiceInput(); };
+  try { recognition.start(); } catch (e) { stopVoiceInput(); }
+}
+
+function stopVoiceInput() {
+  isListening = false;
+  if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
+  const btn = document.getElementById("voice-btn");
+  btn.classList.remove("listening");
+  btn.innerHTML = "&#x1F3A4;";
+  if (recognition) {
+    try { recognition.onresult = null; recognition.onerror = null; recognition.onend = null; } catch(e){}
+    recognition = null;
+  }
+}
+
+document.getElementById("voice-btn").onclick = async () => {
+  await unlockAudioOnce();
+  if (isListening) {
+    try { recognition && recognition.stop(); } catch (e) {}
+    stopVoiceInput();
+  } else {
+    startVoiceInput();
+    if (getResponseMode() !== "voice_text") setResponseMode("voice_text");
+    if (getInputMode() !== "voice") setInputMode("voice");
+  }
+};
+
+// ============================================================
+// TTS — reuse Risa's Studio API
+// ============================================================
+const TTS_SPEEDS = [0.9, 1.0, 1.25, 1.5];
+let ttsSpeedIndex = parseInt(localStorage.getItem("kotonoha_tts_speed") || "1", 10);
+function refreshTTSSpeedButton() {
+  const btn = document.getElementById("tts-speed");
+  const speed = TTS_SPEEDS[ttsSpeedIndex];
+  btn.textContent = `速度 ${speed}x`;
+  btn.classList.toggle("on", speed !== 1.0);
+}
+function cycleTTSSpeed() {
+  ttsSpeedIndex = (ttsSpeedIndex + 1) % TTS_SPEEDS.length;
+  localStorage.setItem("kotonoha_tts_speed", String(ttsSpeedIndex));
+  refreshTTSSpeedButton();
+  showToast(`声の速度: ${TTS_SPEEDS[ttsSpeedIndex]}x`);
+  if (ttsAudioEl && !ttsAudioEl.paused) {
+    try { ttsAudioEl.playbackRate = TTS_SPEEDS[ttsSpeedIndex]; } catch(e) {}
+  }
+}
+function getTTSSpeed() { return TTS_SPEEDS[ttsSpeedIndex]; }
+refreshTTSSpeedButton();
+
+// Response / Input mode
+function getResponseMode() {
+  const v = localStorage.getItem("kotonoha_resp_mode");
+  return (v === "text_only" || v === "voice_text") ? v : "voice_text";
+}
+function getInputMode() {
+  const v = localStorage.getItem("kotonoha_input_mode");
+  return (v === "keyboard" || v === "voice") ? v : "voice";
+}
+function setResponseMode(mode) {
+  if (mode !== "voice_text" && mode !== "text_only") return;
+  unlockAudioOnce();
+  localStorage.setItem("kotonoha_resp_mode", mode);
+  applyResponseModeUI();
+  if (mode === "text_only") { stopCurrentAudio(); currentAudio = null; }
+  showToast(mode === "voice_text" ? "音声+文字で返答します" : "文字だけで返答します");
+}
+function setInputMode(mode) {
+  if (mode !== "voice" && mode !== "keyboard") return;
+  localStorage.setItem("kotonoha_input_mode", mode);
+  applyInputModeUI();
+  if (mode === "keyboard" && isListening) {
+    try { recognition && recognition.stop(); } catch(e) {}
+    stopVoiceInput();
+  }
+  if (mode === "keyboard") {
+    const ta = document.getElementById("chat-input");
+    if (ta) setTimeout(() => ta.focus(), 100);
+  }
+  showToast(mode === "voice" ? "声で話すモード" : "文字で書くモード");
+}
+function applyResponseModeUI() {
+  const mode = getResponseMode();
+  document.querySelectorAll(".mode-chip[data-resp]").forEach(b => b.classList.toggle("active", b.dataset.resp === mode));
+}
+function applyInputModeUI() {
+  const mode = getInputMode();
+  document.querySelectorAll(".mode-chip[data-input]").forEach(b => b.classList.toggle("active", b.dataset.input === mode));
+  document.body.classList.toggle("input-mode-voice", mode === "voice");
+  document.body.classList.toggle("input-mode-keyboard", mode === "keyboard");
+}
+function isTTSEnabled() { return getResponseMode() === "voice_text"; }
+
+// ============================================================
+// AUDIO (iOS-safe pattern from Risa's Studio)
+// ============================================================
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQAAAAA=";
+let ttsAudioEl = null;
+let ttsAudioUnlocked = false;
+let currentAudio = null;
+
+function ensureTTSAudioEl() {
+  if (!ttsAudioEl) { ttsAudioEl = new Audio(); ttsAudioEl.preload = "auto"; ttsAudioEl.playsInline = true; }
+  return ttsAudioEl;
+}
+
+async function unlockAudioOnce() {
+  if (ttsAudioUnlocked) return true;
+  const el = ensureTTSAudioEl();
+  el.src = SILENT_WAV; el.volume = 0;
+  try {
+    await el.play();
+    try { el.pause(); } catch(e) {}
+    try { el.currentTime = 0; } catch(e) {}
+    el.volume = 1; ttsAudioUnlocked = true; return true;
+  } catch (e) { return false; }
+}
+
+function base64ToBlobUrl(base64, mime) {
+  const bin = atob(base64); const len = bin.length;
+  const u8 = new Uint8Array(len);
+  for (let i = 0; i < len; i++) u8[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([u8], { type: mime }));
+}
+
+async function playAudioBase64(base64, mime) {
+  const el = ensureTTSAudioEl();
+  if (el._blobUrl) { try { URL.revokeObjectURL(el._blobUrl); } catch(e) {} el._blobUrl = null; }
+  const blobUrl = base64ToBlobUrl(base64, mime);
+  el._blobUrl = blobUrl; el.src = blobUrl; el.volume = 1;
+  try { el.currentTime = 0; } catch(e) {}
+  return el.play();
+}
+
+function stopCurrentAudio() {
+  if (!ttsAudioEl) return;
+  try { ttsAudioEl.pause(); } catch(e) {}
+  if (ttsAudioEl._blobUrl) { try { URL.revokeObjectURL(ttsAudioEl._blobUrl); } catch(e) {} ttsAudioEl._blobUrl = null; }
+}
+
+async function fetchTTSData(text) {
+  stopCurrentAudio(); currentAudio = null;
+  if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e){} }
+  try {
+    const res = await fetch(`${API_BASE}/api/tts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text, rate: getTTSSpeed(), persona: "hanako" })
+    });
+    const data = await res.json();
+    if (data.error || !data.audio) return null;
+    return { data, text };
+  } catch (e) { return null; }
+}
+
+function playTTSData(ttsResult, fallbackText) {
+  if (!ttsResult || !ttsResult.data) {
+    speakBrowserFallback(fallbackText); return;
+  }
+  const data = ttsResult.data;
+  const mime = data.mime || "audio/mp3";
+  const el = ensureTTSAudioEl();
+  const onEnded = () => { el.removeEventListener("ended", onEnded); el.removeEventListener("error", onError); currentAudio = null; };
+  const onError = () => { el.removeEventListener("ended", onEnded); el.removeEventListener("error", onError); currentAudio = null; };
+  el.addEventListener("ended", onEnded);
+  el.addEventListener("error", onError);
+  playAudioBase64(data.audio, mime).then(() => {
+    currentAudio = el;
+    try { el.playbackRate = getTTSSpeed(); } catch(e) {}
+  }).catch(() => {
+    el.removeEventListener("ended", onEnded);
+    el.removeEventListener("error", onError);
+    currentAudio = null;
+    speakBrowserFallback(fallbackText);
+  });
+}
+
+function speakBrowserFallback(text) {
+  if (!window.speechSynthesis) return;
+  const clean = text.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").replace(/\n+/g, "。").slice(0, 500);
+  try {
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "ja-JP"; utter.rate = getTTSSpeed(); utter.volume = 1.0;
+    window.speechSynthesis.speak(utter);
+  } catch (e) {}
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function escapeHtml(s) {
+  if (!s) return "";
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+}
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadUserProfile();
+if (!state.userName) {
+  // Show setup on first visit
+  // But first check if dashboard should show
+}
+renderDashboard();
+</script>
+</body>
+</html>
