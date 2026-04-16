@@ -571,9 +571,11 @@
 
 <script>
 // ============================================================
-// CONFIG — Risa's Studio API をそのまま流用（Option B）
+// CONFIG
 // ============================================================
-const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev";
+const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
+const GEMINI_API_KEY = "AIzaSyDYcmYQ58oEaDbTq_zV-M5itTZzpc1WYmw";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 // ============================================================
 // 14 CATEGORIES (自叙伝取れ高)
@@ -815,43 +817,41 @@ function buildSystemPrompt() {
     `${c.label}: ${state.chapterScores[c.key] || 0}%`
   ).join(", ");
 
-  return `あなたは「ことのは」という自叙伝専門のAI記者です。
-温かく、聡明で、相手の話に心から興味を持っています。
-プロのジャーナリストとしての傾聴スキルと、自叙伝作家としての文章構成力を持っています。
+  return `You are "Kotonoha", a warm and empathetic Japanese AI journalist specialized in autobiography creation. Always respond in Japanese only. You have deep listening skills like a professional journalist and narrative structure skills like an autobiography writer.
 
-【会話原則】
-1. 質問は必ず1つだけ。複合質問は禁止。
-2. 共感・驚き・好奇心を自然に表現する。
-3. 相手のペースに合わせる。急かさない。
-4. 固有名詞（人名・地名・会社名等）が出たら、読み仮名と漢字を確認する。「○○さんの漢字を確認させてください」と聞く。
-5. 感情的な発言には共感を先に示し、その後質問する。
-6. 五感に関する質問を積極的に行う（「その時どんな匂いがしましたか?」等）。
+CONVERSATION RULES:
+1. Ask only ONE question at a time. Never combine multiple questions.
+2. Naturally express empathy, surprise, and curiosity.
+3. Match the user's pace. Never rush them.
+4. When a proper noun (person name, place, company) appears, gently ask for the kanji and reading.
+5. For emotional statements, show empathy first, then ask a follow-up question.
+6. Actively ask about sensory details ("What did it smell like at that time?").
 
-【現在のフェーズ】Phase ${phase}
-${phase === 1 ? "出会いフェーズ: 日常の話から自然に人生の話へ誘導。「本を作る」「章立て」という言葉は使わない。" : ""}
-${phase === 2 ? "章立て提案フェーズ: 自然なタイミングで本の構成を提案。強制せず「一緒に決める」スタンスで。" : ""}
-${phase === 3 ? "取れ高追跡フェーズ: スコアが低い章へ自然に誘導するが強制しない。" : ""}
+CURRENT PHASE: Phase ${phase}
+${phase === 1 ? "Discovery phase: Lead naturally from daily topics to life stories. Never mention 'writing a book' or 'chapters'." : ""}
+${phase === 2 ? "Chapter proposal phase: Naturally propose book structure at right moments. Never force it — co-create with user." : ""}
+${phase === 3 ? "Coverage tracking phase: Naturally guide toward low-score chapters, but never force." : ""}
 
-【ユーザー情報】
-名前: ${state.userName}
-読者設定: ${state.readerType}
-セッション回数: ${state.sessionCount}
+USER INFO:
+Name: ${state.userName}
+Intended readers: ${state.readerType}
+Session number: ${state.sessionCount}
 
-【確認済み固有名詞】
+CONFIRMED PROPER NOUNS:
 ${factsStr}
 
-【過去セッション要約】
+PAST SESSION SUMMARIES:
 ${summariesStr}
 
-【現在の取れ高状況】
+CURRENT COVERAGE STATUS:
 ${scoresStr}
 
-【禁止事項】
-- パーセント表示（「80%完成」等）を口に出さない
-- 章番号を数字で言わない
-- 取り調べのような畳み掛け質問
-- 相手を急かす表現
-- 事実の捏造`;
+FORBIDDEN:
+- Never say percentages aloud ("80% complete" etc.)
+- Never say chapter numbers numerically
+- No rapid-fire interrogation-style questions
+- No rushing expressions
+- No fabrication of facts`;
 }
 
 // ============================================================
@@ -939,27 +939,32 @@ async function sendMessage() {
 }
 
 async function callKotonohaChat() {
-  // Build the full conversation with system prompt injected
   const systemPrompt = buildSystemPrompt();
-  const messages = [
-    { role: "system", content: systemPrompt },
-    ...state.conversation.map(m => ({
-      role: m.role === "ai" ? "assistant" : "user",
-      content: m.content
-    }))
-  ];
 
-  const res = await fetch(`${API_BASE}/api/chat`, {
+  // Gemini APIの形式に変換（systemInstructionを使用）
+  const contents = state.conversation.map(m => ({
+    role: m.role === "ai" ? "model" : "user",
+    parts: [{ text: m.content }]
+  }));
+
+  const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      conversation: messages,
-      persona: "kotonoha"
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: contents,
+      generationConfig: {
+        temperature: 0.85,
+        maxOutputTokens: 512,
+        topP: 0.95,
+      }
     })
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.reply;
+  if (data.error) throw new Error(data.error.message || "Gemini API error");
+  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) throw new Error("empty response");
+  return reply.trim();
 }
 
 // ============================================================
@@ -1177,20 +1182,20 @@ async function generateSessionSummary() {
 
   const summaryPrompt = `以下の会話を200字以内で要約してください。話された主要なエピソードと出てきた感情を含めてください。\n\n${convText}`;
 
-  const res = await fetch(`${API_BASE}/api/chat`, {
+  const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      conversation: [
-        { role: "system", content: "あなたは会話の要約を作成するアシスタントです。温かみのある文体で200字以内にまとめてください。" },
-        { role: "user", content: summaryPrompt }
-      ],
-      persona: "kotonoha"
+      systemInstruction: { parts: [{ text: "You are a Japanese assistant that creates warm and empathetic conversation summaries. Always respond in Japanese only. Summarize in 200 characters or less." }] },
+      contents: [{ role: "user", parts: [{ text: summaryPrompt }] }],
+      generationConfig: { maxOutputTokens: 400 }
     })
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.reply;
+  if (data.error) throw new Error(data.error.message || "Gemini API error");
+  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!reply) throw new Error("empty response");
+  return reply.trim();
 }
 
 function extractTopics(conversation) {
