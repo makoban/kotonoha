@@ -815,6 +815,7 @@ const CATEGORIES = [
 // ============================================================
 const state = {
   userName: null,
+  userReading: null,
   readerType: null,
   sessionId: null,
   sessionCount: 0,
@@ -833,6 +834,7 @@ function loadUserProfile() {
   const profile = JSON.parse(localStorage.getItem("kotonoha_profile") || "null");
   if (profile) {
     state.userName = profile.name;
+    state.userReading = profile.reading;
     state.readerType = profile.readerType;
   }
   state.lifeFacts = JSON.parse(localStorage.getItem("kotonoha_facts") || "[]");
@@ -843,7 +845,7 @@ function loadUserProfile() {
 
 function saveUserProfile() {
   localStorage.setItem("kotonoha_profile", JSON.stringify({
-    name: state.userName, readerType: state.readerType
+    name: state.userName, reading: state.userReading, readerType: state.readerType
   }));
 }
 
@@ -979,6 +981,7 @@ async function startNewSession() {
   // 新規セッション：完全にクリーンな状態で開始
   // 過去のプロフィール・履歴を引き継がない
   state.userName = null;
+  state.userReading = null;
   state.readerType = null;
   state.conversation = [];
   state.lifeFacts = [];
@@ -1013,9 +1016,24 @@ async function handleOnboarding(userText) {
       return true;
     }
     state.userName = name;
+    onboardingStep = "ask_reading";
+    await speakAIMessage(`「${name}」さんですね。\n\n読み方を教えていただけますか？\nたとえば「やまだ たろう」のように、ひらがなでお願いします。`);
+    return true;
+  }
+  if (onboardingStep === "ask_reading") {
+    let reading = userText.trim()
+      .replace(/です[。．.]?$/g, "")
+      .replace(/^読みは/g, "")
+      .replace(/^よみは/g, "")
+      .trim();
+    if (!reading) {
+      await speakAIMessage("すみません、読み方をもう一度教えていただけますか？ひらがなでお願いします。");
+      return true;
+    }
+    state.userReading = reading;
     saveUserProfile();
     onboardingStep = "ask_reader";
-    await speakAIMessage(`${name}${i18n("onboard_reader_ask")}`);
+    await speakAIMessage(`${state.userName}（${reading}）さん、よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
     return true;
   }
   if (onboardingStep === "ask_reader") {
@@ -1088,6 +1106,7 @@ ${msgCount < 3 ? "You are just getting started. Help the user define what kind o
 
 USER INFO:
 Name: ${state.userName || "(not yet provided)"}
+Reading: ${state.userReading || "(not yet provided)"}
 Intended readers: ${state.readerType || "(not yet decided)"}
 
 FORBIDDEN:
