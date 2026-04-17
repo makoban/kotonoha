@@ -771,7 +771,7 @@ function startNewSession() {
     resetProgressMeter();
 
     onboardingStep = "ask_name";
-    addMessage("ai", "はじめまして。私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？");
+    speakAIMessage("はじめまして。私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？");
     return;
   }
 
@@ -801,7 +801,7 @@ function startNewSession() {
     const weakest = getWeakestChapter();
     firstMsg = `${state.userName}さん、こんにちは！\n\n本の色づきを見てみると、「${weakest.label}」のところがまだ少し薄いですね。\n\n今日はそのあたりの話を聞かせてもらえますか?\nそれとも、別に話したいことがありますか?`;
   }
-  addMessage("ai", firstMsg);
+  speakAIMessage(firstMsg);
 }
 
 // Handle onboarding responses (intercept before normal AI call)
@@ -816,13 +816,13 @@ function handleOnboarding(userText) {
       .replace(/^名前は/g, "")
       .trim();
     if (!name || name.length > 20) {
-      addMessage("ai", "すみません、お名前をもう一度教えていただけますか？");
+      speakAIMessage("すみません、お名前をもう一度教えていただけますか？");
       return true; // handled
     }
     state.userName = name;
     saveUserProfile();
     onboardingStep = "ask_reader";
-    addMessage("ai", `${name}さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
+    speakAIMessage(`${name}さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
     return true;
   }
   if (onboardingStep === "ask_reader") {
@@ -847,7 +847,7 @@ function handleOnboarding(userText) {
                         readerType === "self" ? "ご自身の記録" : "";
     const readerAck = readerLabel ? `${readerLabel}に向けて——素敵ですね。\n\n` : "";
 
-    addMessage("ai", `${readerAck}では、まず一緒にこの本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。`);
+    speakAIMessage(`${readerAck}では、まず一緒にこの本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。`);
 
     // Render dashboard greeting
     document.getElementById("greeting-text").textContent = `${state.userName}さんの自叙伝`;
@@ -936,16 +936,42 @@ function addMessage(role, content) {
   messages.scrollTop = messages.scrollHeight;
 }
 
-function showTyping() {
+function showTyping(label) {
   const messages = document.getElementById("messages");
   const typing = document.createElement("div");
   typing.className = "msg msg-ai";
   typing.id = "typing-indicator";
-  typing.innerHTML = `<div class="msg-bubble msg-typing"><span></span><span></span><span></span></div>`;
+  const labelHtml = label ? `<div style="font-size:0.72em;color:var(--muted);margin-bottom:4px;">${escapeHtml(label)}</div>` : "";
+  typing.innerHTML = `<div class="msg-bubble">${labelHtml}<div class="msg-typing"><span></span><span></span><span></span></div></div>`;
   messages.appendChild(typing);
   messages.scrollTop = messages.scrollHeight;
 }
+function updateTypingLabel(label) {
+  const t = document.getElementById("typing-indicator");
+  if (!t) return;
+  const labelEl = t.querySelector("div[style]");
+  if (labelEl) labelEl.textContent = label;
+}
 function hideTyping() { const t = document.getElementById("typing-indicator"); if (t) t.remove(); }
+
+// AI発言を「考え中→音声準備→表示+再生」の統一フローで出す
+async function speakAIMessage(text) {
+  const voiceMode = isTTSEnabled();
+  const thinkStart = Date.now();
+  showTyping("考え中…");
+  // 最低限の「考え中」表示時間
+  await thinkingDelay(thinkStart);
+  if (voiceMode) {
+    updateTypingLabel("音声を準備中…");
+    const ttsData = await fetchTTSData(text);
+    hideTyping();
+    addMessage("ai", text);
+    playTTSData(ttsData, text);
+  } else {
+    hideTyping();
+    addMessage("ai", text);
+  }
+}
 
 const MIN_THINKING_MS = 3000;
 function thinkingDelay(startTime) {
@@ -996,11 +1022,12 @@ async function sendMessage() {
   document.getElementById("send-btn").disabled = true;
   const voiceMode = isTTSEnabled();
   const thinkStart = Date.now();
-  showTyping();
+  showTyping("考え中…");
   try {
     const reply = await callKotonohaChat();
     await thinkingDelay(thinkStart);
     if (voiceMode) {
+      updateTypingLabel("音声を準備中…");
       const ttsData = await fetchTTSData(reply);
       hideTyping();
       addMessage("ai", reply);
