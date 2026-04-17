@@ -1761,31 +1761,30 @@ async function fetchTTSData(text) {
   stopCurrentAudio(); currentAudio = null;
   if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e){} }
   try {
-    // Gemini 3.1 Flash TTS（kotonoha-api経由）
-    const res = await fetch(KOTONOHA_API.replace("/api/chat", "/api/tts"), {
+    // AI記者と同じ gemini-3.1-flash-tts-preview / Hanako を使用
+    const res = await fetch(`${API_BASE}/api/tts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text, voice: "Aoede" })
+      body: JSON.stringify({ text: text, rate: getTTSSpeed(), persona: "hanako" })
     });
     const data = await res.json();
-    // Gemini TTSのレスポンスからaudioデータを抽出
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const audioPart = parts.find(p => p.inlineData && /audio/i.test(p.inlineData.mimeType || ""));
-    if (!audioPart) return null;
-    return { audio: audioPart.inlineData.data, mime: audioPart.inlineData.mimeType, text };
+    if (data.error || !data.audio) return null;
+    return { data, text };
   } catch (e) { return null; }
 }
 
 function playTTSData(ttsResult, fallbackText) {
-  if (!ttsResult || !ttsResult.audio) {
+  if (!ttsResult || !ttsResult.data) {
     speakBrowserFallback(fallbackText); return;
   }
+  const data = ttsResult.data;
+  const mime = data.mime || "audio/wav";
   const el = ensureTTSAudioEl();
   const onEnded = () => { el.removeEventListener("ended", onEnded); el.removeEventListener("error", onError); currentAudio = null; };
   const onError = () => { el.removeEventListener("ended", onEnded); el.removeEventListener("error", onError); currentAudio = null; };
   el.addEventListener("ended", onEnded);
   el.addEventListener("error", onError);
-  playAudioBase64(ttsResult.audio, ttsResult.mime || "audio/wav").then(() => {
+  playAudioBase64(data.audio, mime).then(() => {
     currentAudio = el;
     try { el.playbackRate = getTTSSpeed(); } catch(e) {}
   }).catch(() => {
