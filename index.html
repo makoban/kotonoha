@@ -11,7 +11,8 @@
 <meta name="apple-mobile-web-app-title" content="ことのは">
 <title>ことのは</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Noto+Sans+JP:wght@400;600;700&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <style>
   :root {
     --bg: #0e0e11; --bg2: #16161a; --bg3: #1e1e24;
@@ -21,6 +22,7 @@
     --text: #f0ede8; --muted: #8a8898; --text-muted: #4a4a5a;
     --warm-white: #1e1e24;
   }
+  .title-font { font-family: 'Shippori Mincho', 'Noto Serif JP', Georgia, serif; }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body {
     height: 100%; overflow: hidden;
@@ -417,6 +419,49 @@
     text-align: center; color: var(--text-muted); font-size: 0.72em;
     padding: 8px 16px; background: var(--bg2); flex-shrink: 0;
   }
+
+  /* ========== Cards (depth) ========== */
+  .card {
+    background: var(--bg2); border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    padding: 20px;
+  }
+
+  /* ========== Wave Animation (recording) ========== */
+  .wave-bar {
+    display: flex; align-items: center; justify-content: center;
+    gap: 3px; height: 32px; padding: 0 16px;
+    background: var(--bg2); border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .wave-bar.hidden { display: none; }
+  .wave-bar span {
+    display: block; width: 3px; border-radius: 2px;
+    background: var(--accent); animation: wave 1.2s ease-in-out infinite;
+  }
+  .wave-bar span:nth-child(1) { height: 8px; animation-delay: 0s; }
+  .wave-bar span:nth-child(2) { height: 16px; animation-delay: 0.1s; }
+  .wave-bar span:nth-child(3) { height: 24px; animation-delay: 0.2s; }
+  .wave-bar span:nth-child(4) { height: 16px; animation-delay: 0.3s; }
+  .wave-bar span:nth-child(5) { height: 10px; animation-delay: 0.4s; }
+  .wave-bar span:nth-child(6) { height: 20px; animation-delay: 0.15s; }
+  .wave-bar span:nth-child(7) { height: 12px; animation-delay: 0.35s; }
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.4; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+
+  /* ========== Micro-interactions ========== */
+  .fade-up {
+    animation: fadeUp 0.4s ease-out;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Lucide icons inline */
+  .icon { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; fill: none; }
 </style>
 </head>
 <body>
@@ -424,27 +469,27 @@
 <!-- ========== LANGUAGE SELECT (first visit) ========== -->
 <section id="screen-lang" class="screen">
   <div style="padding:60px 24px; text-align:center;">
-    <div style="font-size:2.4em; margin-bottom:16px;">📖</div>
-    <h1 style="color:var(--text); font-size:1.4em; font-weight:300; letter-spacing:0.12em; margin-bottom:8px;">kotonoha</h1>
+    <div style="margin-bottom:16px;"><i data-lucide="book-open" style="width:40px;height:40px;color:var(--accent);"></i></div>
+    <h1 class="title-font" style="color:var(--text); font-size:1.5em; font-weight:400; letter-spacing:0.12em; margin-bottom:8px;">ことのは</h1>
     <p style="color:var(--muted); font-size:0.85em; margin-bottom:36px;">Choose your language / 言語を選んでください</p>
     <div id="lang-buttons" style="display:flex; flex-direction:column; gap:10px; max-width:320px; margin:0 auto;"></div>
   </div>
 </section>
 
 <!-- ========== DASHBOARD (default) ========== -->
-<section id="screen-dashboard" class="screen">
+<section id="screen-dashboard" class="screen fade-up">
   <div class="dash-header">
-    <div class="logo-icon">&#x1F4D6;</div>
+    <div class="logo-icon"><i data-lucide="book-open" style="width:28px;height:28px;color:var(--accent);"></i></div>
     <div class="greeting">
-      <h1>ことのは</h1>
+      <h1 class="title-font">ことのは</h1>
       <p id="greeting-text" data-i18n="tagline">あなたの声が、本になる</p>
     </div>
   </div>
 
-  <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:20px;">
-    <button onclick="toggleTTSMute()" id="dash-tts-toggle" style="background:var(--card); border:2px solid var(--border); color:var(--text); width:56px; height:56px; border-radius:50%; font-size:1.5em; cursor:pointer; display:flex; align-items:center; justify-content:center;">🔊</button>
-    <button onclick="cycleTTSSpeed()" id="dash-tts-speed" style="background:var(--card); border:2px solid var(--border); color:var(--text); width:56px; height:56px; border-radius:50%; font-size:0.85em; font-weight:bold; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center;">1.0x</button>
-    <button onclick="changeLang()" id="change-lang-btn" style="background:var(--card); border:2px solid var(--border); color:var(--text); width:56px; height:56px; border-radius:50%; font-size:1.5em; cursor:pointer; display:flex; align-items:center; justify-content:center;">🌐</button>
+  <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin-bottom:24px;">
+    <button onclick="toggleTTSMute()" id="dash-tts-toggle" style="background:var(--bg2); border:1px solid var(--border); color:var(--text); width:52px; height:52px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i data-lucide="volume-2" style="width:22px;height:22px;"></i></button>
+    <button onclick="cycleTTSSpeed()" id="dash-tts-speed" style="background:var(--bg2); border:1px solid var(--border); color:var(--text); width:52px; height:52px; border-radius:50%; font-size:0.82em; font-weight:600; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center;">1x</button>
+    <button onclick="changeLang()" id="change-lang-btn" style="background:var(--bg2); border:1px solid var(--border); color:var(--text); width:52px; height:52px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i data-lucide="globe" style="width:22px;height:22px;"></i></button>
   </div>
 
   <button class="new-chat-btn" id="start-new-btn" data-i18n="start_new">
@@ -508,8 +553,8 @@
       <div class="info-title" data-i18n="kotonoha">ことのは</div>
       <div class="info-topic" id="chat-topic"></div>
     </div>
-    <button onclick="toggleTTSMute()" id="chat-tts-toggle" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 8px; border-radius:14px; font-size:0.75em; cursor:pointer; flex-shrink:0;">🔊</button>
-    <button onclick="cycleTTSSpeed()" id="chat-tts-speed" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 6px; border-radius:14px; font-size:0.68em; cursor:pointer; flex-shrink:0;">1.0x</button>
+    <button onclick="toggleTTSMute()" id="chat-tts-toggle" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:5px; border-radius:8px; cursor:pointer; flex-shrink:0; display:flex; align-items:center;"><i data-lucide="volume-2" style="width:16px;height:16px;"></i></button>
+    <button onclick="cycleTTSSpeed()" id="chat-tts-speed" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 6px; border-radius:8px; font-size:0.68em; cursor:pointer; flex-shrink:0; font-family:inherit;">1x</button>
     <button class="end-btn" id="end-btn" data-i18n="end_session">今日はここまで</button>
   </header>
   <div class="progress-bar" id="progress-bar" onclick="toggleProgressDetail()">
@@ -523,10 +568,13 @@
     <div class="progress-detail" id="progress-detail"></div>
   </div>
   <div class="chat-messages" id="messages"></div>
+  <div class="wave-bar hidden" id="wave-bar">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
   <div class="chat-input-area">
-    <button class="voice-btn" id="voice-btn" title="Voice">&#x1F3A4;</button>
+    <button class="voice-btn" id="voice-btn" title="Voice"><i data-lucide="mic" style="width:22px;height:22px;"></i></button>
     <textarea id="chat-input" data-i18n-placeholder="placeholder" placeholder="話したいことを書いてください" rows="1"></textarea>
-    <button class="send-btn" id="send-btn">&#x25B6;</button>
+    <button class="send-btn" id="send-btn"><i data-lucide="send" style="width:18px;height:18px;"></i></button>
   </div>
   <div class="footer-tip" data-i18n="footer_tip" style="display:none;">疲れたら「今日はここまで」で終了できます</div>
 </section>
@@ -563,7 +611,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.5.1";
+const APP_VERSION = "0.6.0";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -1598,7 +1646,9 @@ function startVoiceInput() {
   finalTranscript = input.value || "";
   recognition.onstart = () => {
     isListening = true; btn.classList.add("listening");
-    btn.innerHTML = "&#x23FA;";
+    btn.innerHTML = '<i data-lucide="mic-off" style="width:22px;height:22px;"></i>';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    document.getElementById("wave-bar").classList.remove("hidden");
     showToast("話してください (10秒静かで自動停止)");
     resetSilenceTimer();
   };
@@ -1636,7 +1686,9 @@ function stopVoiceInput() {
   if (silenceTimer) { clearTimeout(silenceTimer); silenceTimer = null; }
   const btn = document.getElementById("voice-btn");
   btn.classList.remove("listening");
-  btn.innerHTML = "&#x1F3A4;";
+  btn.innerHTML = '<i data-lucide="mic" style="width:22px;height:22px;"></i>';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  document.getElementById("wave-bar").classList.add("hidden");
   if (recognition) {
     try { recognition.onresult = null; recognition.onerror = null; recognition.onend = null; } catch(e){}
     recognition = null;
@@ -1661,18 +1713,20 @@ let ttsSpeedIndex = parseInt(localStorage.getItem("kotonoha_tts_speed") || "0", 
 let ttsMuted = localStorage.getItem("kotonoha_tts_muted") === "true";
 
 function updateAllTTSButtons() {
-  const icon = ttsMuted ? "🔇" : "🔊";
+  const iconName = ttsMuted ? "volume-x" : "volume-2";
   const speed = TTS_SPEEDS[ttsSpeedIndex] + "x";
-  // ダッシュボードのボタン
+  // ダッシュボード
   const dashToggle = document.getElementById("dash-tts-toggle");
   const dashSpeed = document.getElementById("dash-tts-speed");
-  if (dashToggle) dashToggle.textContent = icon;
+  if (dashToggle) { dashToggle.innerHTML = `<i data-lucide="${iconName}" style="width:22px;height:22px;"></i>`; }
   if (dashSpeed) { dashSpeed.textContent = speed; dashSpeed.style.display = ttsMuted ? "none" : ""; }
-  // チャットのボタン
+  // チャット
   const chatToggle = document.getElementById("chat-tts-toggle");
   const chatSpeed = document.getElementById("chat-tts-speed");
-  if (chatToggle) chatToggle.textContent = icon;
+  if (chatToggle) { chatToggle.innerHTML = `<i data-lucide="${iconName}" style="width:16px;height:16px;"></i>`; }
   if (chatSpeed) { chatSpeed.textContent = speed; chatSpeed.style.display = ttsMuted ? "none" : ""; }
+  // Lucideアイコン再描画
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function toggleTTSMute() {
@@ -1860,7 +1914,8 @@ if (!currentLang) {
 const verEl = document.getElementById("current-version");
 if (verEl) verEl.textContent = "v" + APP_VERSION;
 const langBtn = document.getElementById("change-lang-btn");
-if (langBtn && currentLang) langBtn.textContent = "🌐";
+// Lucideアイコン初期化
+if (typeof lucide !== 'undefined') lucide.createIcons();
 </script>
 </body>
 </html>
