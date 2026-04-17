@@ -551,11 +551,12 @@
       <button type="button" class="mode-chip" data-input="keyboard" onclick="setInputMode('keyboard')" data-i18n="keyboard_input">文字で書く</button>
     </div>
   </div>
-  <div class="chat-input-area">
-    <button class="voice-btn" id="voice-btn" title="Voice">&#x1F3A4;</button>
-    <textarea id="chat-input" data-i18n-placeholder="placeholder" placeholder="話したいことを書いてください" rows="1"></textarea>
-    <button class="send-btn" id="send-btn">&#x25B6;</button>
+  <div class="chat-input-area" style="justify-content:center; padding:14px;">
+    <button class="voice-btn" id="voice-btn" title="Voice" style="width:64px; height:64px; font-size:1.8em;">&#x1F3A4;</button>
   </div>
+  <!-- テキスト入力（非表示・音声認識結果を保持するバッファ） -->
+  <textarea id="chat-input" style="display:none;" rows="1"></textarea>
+  <button id="send-btn" style="display:none;"></button>
   <div class="footer-tip" data-i18n="footer_tip" style="display:none;">疲れたら「今日はここまで」で終了できます</div>
 </section>
 
@@ -1608,7 +1609,14 @@ function startVoiceInput() {
     else if (e.error !== "aborted") showToast("音声エラー: " + e.error);
     stopVoiceInput();
   };
-  recognition.onend = () => { stopVoiceInput(); };
+  recognition.onend = () => {
+    stopVoiceInput();
+    // 音声認識完了 → テキストがあれば自動送信
+    const finalText = document.getElementById("chat-input").value.trim();
+    if (finalText) {
+      sendMessage();
+    }
+  };
   try { recognition.start(); } catch (e) { stopVoiceInput(); }
 }
 
@@ -1627,12 +1635,10 @@ function stopVoiceInput() {
 document.getElementById("voice-btn").onclick = async () => {
   await unlockAudioOnce();
   if (isListening) {
+    // マイク停止 → onendで自動送信される
     try { recognition && recognition.stop(); } catch (e) {}
-    stopVoiceInput();
   } else {
     startVoiceInput();
-    if (getResponseMode() !== "voice_text") setResponseMode("voice_text");
-    if (getInputMode() !== "voice") setInputMode("voice");
   }
 };
 
