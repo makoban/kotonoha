@@ -595,7 +595,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.2.2";
+const APP_VERSION = "0.2.3";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -903,8 +903,11 @@ function completeSetup() {
 // DASHBOARD
 // ============================================================
 function renderDashboard() {
+  // 履歴がある場合のみ名前を表示
+  const sessions = getSessions();
+  const hasHistory = sessions.length > 0;
   document.getElementById("greeting-text").textContent =
-    state.userName ? `${state.userName}さんの自叙伝` : "あなたの声が、本になる";
+    (hasHistory && state.userName) ? `${state.userName}さんの自叙伝` : i18n("tagline");
   renderChapterProgress();
   renderSessionHistory();
 }
@@ -1001,13 +1004,18 @@ function startNewSession() {
   document.getElementById("chat-topic").textContent = `${i18n("session_label")}${state.sessionCount}${i18n("session_unit")}`;
   resetProgressMeter();
 
-  // 最初のメッセージは即表示（awaitなし・TTS不要）
+  // 最初のメッセージ：即テキスト表示 + TTS再生は非同期
   onboardingStep = "ask_name";
-  addMessage("ai", i18n("onboard_greeting"));
+  const greeting = i18n("onboard_greeting");
+  addMessage("ai", greeting);
+  // TTS再生（失敗しても無視）
+  unlockAudioOnce().then(() => fetchTTSData(greeting)).then(tts => {
+    if (tts && state.sessionId) playTTSData(tts, greeting);
+  }).catch(() => {});
 }
 
 // Handle onboarding responses (intercept before normal AI call)
-async function handleOnboarding(userText) {
+function handleOnboarding(userText) {
   if (onboardingStep === "ask_name") {
     let name = userText.trim()
       .replace(/です[。．.]?$/g, "")
@@ -1017,12 +1025,12 @@ async function handleOnboarding(userText) {
       .replace(/^名前は/g, "")
       .trim();
     if (!name || name.length > 20) {
-      await speakAIMessage(i18n("onboard_name_retry"));
+      sayAI(i18n("onboard_name_retry"));
       return true;
     }
     state.userName = name;
     onboardingStep = "ask_reading";
-    await speakAIMessage(`「${name}」さんですね。\n\n読み方を教えていただけますか？\nたとえば「やまだ たろう」のように、ひらがなでお願いします。`);
+    sayAI(`「${name}」さんですね。\n\n読み方を教えていただけますか？\nたとえば「やまだ たろう」のように、ひらがなでお願いします。`);
     return true;
   }
   if (onboardingStep === "ask_reading") {
@@ -1032,13 +1040,13 @@ async function handleOnboarding(userText) {
       .replace(/^よみは/g, "")
       .trim();
     if (!reading) {
-      await speakAIMessage("すみません、読み方をもう一度教えていただけますか？ひらがなでお願いします。");
+      sayAI("すみません、読み方をもう一度教えていただけますか？ひらがなでお願いします。");
       return true;
     }
     state.userReading = reading;
     saveUserProfile();
     onboardingStep = "ask_reader";
-    await speakAIMessage(`${state.userName}（${reading}）さん、よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
+    sayAI(`${state.userName}（${reading}）さん、よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
     return true;
   }
   if (onboardingStep === "ask_reader") {
@@ -1059,9 +1067,7 @@ async function handleOnboarding(userText) {
                         readerType === "self" ? i18n("reader_self") : "";
     const readerAck = readerLabel ? `${readerLabel}${i18n("reader_ack")}` : "";
 
-    await speakAIMessage(`${readerAck}${i18n("onboard_goal").replace("{name}", state.userName)}`);
-
-    document.getElementById("greeting-text").textContent = `${state.userName}さんの自叙伝`;
+    sayAI(`${readerAck}${i18n("onboard_goal").replace("{name}", state.userName)}`);
     return true;
   }
   return false;
@@ -1153,27 +1159,29 @@ function updateTypingLabel(label) {
 }
 function hideTyping() { const t = document.getElementById("typing-indicator"); if (t) t.remove(); }
 
-// AI発言を「考え中→音声準備→表示+再生」の統一フローで出す
-// sessionIdでキャンセル検出（画面遷移で古いspeakAIMessageを無効化）
+// AI発言：テキスト即表示 + TTS非同期再生
+function sayAI(text) {
+  addMessage("ai", text);
+  // TTS再生（非同期・失敗しても無視）
+  const sid = state.sessionId;
+  fetchTTSData(text).then(tts => {
+    if (tts && state.sessionId === sid) playTTSData(tts, text);
+  }).catch(() => {});
+}
+
+// AI発言を「考え中→音声準備→表示+再生」のフローで出す（API応答用）
 async function speakAIMessage(text) {
   const mySessionId = state.sessionId;
-  const voiceMode = isTTSEnabled();
   const thinkStart = Date.now();
   showTyping(i18n("thinking"));
   await thinkingDelay(thinkStart);
-  // セッションが変わっていたら中断
   if (state.sessionId !== mySessionId) { hideTyping(); return; }
-  if (voiceMode) {
-    updateTypingLabel(i18n("preparing_voice"));
-    const ttsData = await fetchTTSData(text);
-    if (state.sessionId !== mySessionId) { hideTyping(); return; }
-    hideTyping();
-    addMessage("ai", text);
-    playTTSData(ttsData, text);
-  } else {
-    hideTyping();
-    addMessage("ai", text);
-  }
+  updateTypingLabel(i18n("preparing_voice"));
+  const ttsData = await fetchTTSData(text);
+  if (state.sessionId !== mySessionId) { hideTyping(); return; }
+  hideTyping();
+  addMessage("ai", text);
+  if (ttsData) playTTSData(ttsData, text);
 }
 
 const MIN_THINKING_MS = 3000;
@@ -1221,8 +1229,7 @@ async function sendMessage() {
 
   // オンボーディング中はAI呼び出しせずローカル処理
   if (onboardingStep) {
-    const handled = await handleOnboarding(text);
-    if (handled) return;
+    if (handleOnboarding(text)) return;
   }
 
   state.isGenerating = true;
