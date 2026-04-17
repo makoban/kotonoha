@@ -584,7 +584,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.3.0";
+const APP_VERSION = "0.3.1";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -992,14 +992,9 @@ function startNewSession() {
   document.getElementById("chat-topic").textContent = `${i18n("session_label")}${state.sessionCount}${i18n("session_unit")}`;
   resetProgressMeter();
 
-  // 最初のメッセージ：即テキスト表示 + TTS再生は非同期
+  // 最初のメッセージも統一ルール（考え中→音声準備→表示+再生）
   onboardingStep = "ask_name";
-  const greeting = i18n("onboard_greeting");
-  addMessage("ai", greeting);
-  // TTS再生（失敗しても無視）
-  unlockAudioOnce().then(() => fetchTTSData(greeting)).then(tts => {
-    if (tts && state.sessionId) playTTSData(tts, greeting);
-  }).catch(() => {});
+  sayAI(i18n("onboard_greeting"));
 }
 
 // Handle onboarding responses (intercept before normal AI call)
@@ -1147,32 +1142,45 @@ function updateTypingLabel(label) {
 }
 function hideTyping() { const t = document.getElementById("typing-indicator"); if (t) t.remove(); }
 
-// AI発言：テキスト即表示 + TTS非同期再生
-function sayAI(text) {
-  addMessage("ai", text);
-  // TTS再生（非同期・失敗しても無視）
+// ============================================================
+// AI発言の統一ルール（例外なし）
+// 1. 「考えています…」8秒
+// 2. 「音声を準備中…」TTS完了まで（消音時はスキップ）
+// 3. テキスト表示 + 音声再生を同時に
+// ============================================================
+async function sayAI(text) {
   const sid = state.sessionId;
-  fetchTTSData(text).then(tts => {
-    if (tts && state.sessionId === sid) playTTSData(tts, text);
-  }).catch(() => {});
-}
-
-// AI発言を「考え中→音声準備→表示+再生」のフローで出す（API応答用）
-async function speakAIMessage(text) {
-  const mySessionId = state.sessionId;
   const thinkStart = Date.now();
+
+  // Step 1: 考えています…（8秒）
   showTyping(i18n("thinking"));
   await thinkingDelay(thinkStart);
-  if (state.sessionId !== mySessionId) { hideTyping(); return; }
-  updateTypingLabel(i18n("preparing_voice"));
-  const ttsData = await fetchTTSData(text);
-  if (state.sessionId !== mySessionId) { hideTyping(); return; }
-  hideTyping();
-  addMessage("ai", text);
-  if (ttsData) playTTSData(ttsData, text);
+  if (state.sessionId !== sid) { hideTyping(); return; }
+
+  // Step 2: 音声準備（消音時はスキップ）
+  if (isTTSEnabled()) {
+    updateTypingLabel(i18n("preparing_voice"));
+    try {
+      await unlockAudioOnce();
+      const ttsData = await fetchTTSData(text);
+      if (state.sessionId !== sid) { hideTyping(); return; }
+      // Step 3: テキスト表示 + 音声再生を同時に
+      hideTyping();
+      addMessage("ai", text);
+      if (ttsData) playTTSData(ttsData, text);
+    } catch(e) {
+      // TTS失敗 → テキストだけ表示
+      hideTyping();
+      addMessage("ai", text);
+    }
+  } else {
+    // 消音モード → テキストだけ表示
+    hideTyping();
+    addMessage("ai", text);
+  }
 }
 
-const MIN_THINKING_MS = 3000;
+const MIN_THINKING_MS = 8000;
 function thinkingDelay(startTime) {
   const elapsed = Date.now() - startTime;
   const remaining = MIN_THINKING_MS - elapsed;
@@ -1222,25 +1230,14 @@ async function sendMessage() {
 
   state.isGenerating = true;
   document.getElementById("send-btn").disabled = true;
-  const voiceMode = isTTSEnabled();
-  const thinkStart = Date.now();
-  showTyping(i18n("thinking"));
   try {
+    // API呼び出し中は「考えています…」を表示
+    showTyping(i18n("thinking"));
     const reply = await callKotonohaChat();
-    await thinkingDelay(thinkStart);
-    if (voiceMode) {
-      updateTypingLabel(i18n("preparing_voice"));
-      const ttsData = await fetchTTSData(reply);
-      hideTyping();
-      addMessage("ai", reply);
-      playTTSData(ttsData, reply);
-    } else {
-      hideTyping();
-      addMessage("ai", reply);
-    }
-    // Auto-save session
+    hideTyping();
+    // 統一ルール：考え中8秒→音声準備→テキスト+音声同時
+    await sayAI(reply);
     autoSaveCurrentSession();
-    // Update progress (local analysis)
     localAnalyzeProgress();
   } catch (e) {
     hideTyping();
