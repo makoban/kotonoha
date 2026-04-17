@@ -1,4 +1,4 @@
-const CACHE_NAME = "kotonoha-v1";
+const CACHE_NAME = "kotonoha-v2";
 const ASSETS = [
   "/kotonoha/",
   "/kotonoha/index.html",
@@ -31,6 +31,7 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   if (e.request.url.includes("generativelanguage.googleapis.com")) return;
   if (e.request.url.includes("risa-studio-api")) return;
+  if (e.request.url.includes("kotonoha-api")) return;
 
   e.respondWith(
     fetch(e.request)
