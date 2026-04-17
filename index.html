@@ -1861,7 +1861,8 @@ function renderLangSelect() {
 
 function chooseLang(code) {
   setLang(code);
-  showScreen("screen-dashboard");
+  // ページリロードで確実にダッシュボード表示
+  location.reload();
 }
 
 // ============================================================
