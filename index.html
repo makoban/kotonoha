@@ -459,7 +459,7 @@
     </div>
   </div>
 
-  <button class="new-chat-btn" onclick="startNewSession()" data-i18n="start_new">
+  <button class="new-chat-btn" id="start-new-btn" data-i18n="start_new">
     最初から始める
   </button>
 
@@ -1179,6 +1179,9 @@ function thinkingDelay(startTime) {
 }
 
 document.getElementById("send-btn").onclick = sendMessage;
+document.getElementById("start-new-btn").addEventListener("click", () => {
+  startNewSession().catch(e => console.error("startNewSession error:", e));
+});
 document.getElementById("chat-input").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey && !isMobile()) { e.preventDefault(); sendMessage(); }
 });
