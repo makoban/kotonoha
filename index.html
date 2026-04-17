@@ -436,30 +436,40 @@
 </head>
 <body>
 
+<!-- ========== LANGUAGE SELECT (first visit) ========== -->
+<section id="screen-lang" class="screen">
+  <div style="padding:60px 24px; text-align:center;">
+    <div style="font-size:3em; margin-bottom:16px;">📖</div>
+    <h1 style="color:var(--accent2); font-size:1.3em; margin-bottom:8px;">Kotonoha Memoir</h1>
+    <p style="color:var(--muted); font-size:0.9em; margin-bottom:32px;">Choose your language / 言語を選んでください</p>
+    <div id="lang-buttons" style="display:flex; flex-direction:column; gap:10px; max-width:320px; margin:0 auto;"></div>
+  </div>
+</section>
+
 <!-- ========== DASHBOARD (default) ========== -->
-<section id="screen-dashboard" class="screen active">
+<section id="screen-dashboard" class="screen">
   <div class="dash-header">
     <div class="logo-icon">&#x1F4D6;</div>
     <div class="greeting">
-      <h1>ことのは自叙伝 <span class="version-badge">MVP 0.1</span></h1>
-      <p id="greeting-text">あなたの声が、本になる</p>
+      <h1><span data-i18n="app_title">ことのは自叙伝</span> <span class="version-badge">MVP 0.1</span></h1>
+      <p id="greeting-text" data-i18n="tagline">あなたの声が、本になる</p>
     </div>
   </div>
 
-  <button class="new-chat-btn" onclick="startNewSession()">
+  <button class="new-chat-btn" onclick="startNewSession()" data-i18n="start_new">
     最初から始める
   </button>
 
   <div id="resume-section" style="display:none;">
     <div class="history-section-title">
-      <span>続きから話す</span>
+      <span data-i18n="resume">続きから話す</span>
       <span id="history-count" style="color:var(--muted); font-size:0.75em;"></span>
     </div>
     <div id="dashboard-history" class="history-list"></div>
   </div>
 
   <div class="chapter-progress" id="chapter-progress">
-    <div class="chapter-progress-title">本の色づき</div>
+    <div class="chapter-progress-title" data-i18n="book_progress">本の色づき</div>
     <div id="chapter-list"></div>
   </div>
 </section>
@@ -504,18 +514,18 @@
 <!-- ========== CHAT ========== -->
 <section id="screen-chat" class="screen">
   <header class="chat-header">
-    <button class="back-btn" onclick="endSessionConfirm()">&#8592; 戻る</button>
+    <button class="back-btn" onclick="endSessionConfirm()" data-i18n="back">← 戻る</button>
     <div class="chat-icon">&#x1F4D6;</div>
     <div class="info">
-      <div class="info-title">ことのは</div>
-      <div class="info-topic" id="chat-topic">自叙伝インタビュー</div>
+      <div class="info-title" data-i18n="kotonoha">ことのは</div>
+      <div class="info-topic" id="chat-topic"></div>
     </div>
-    <button class="end-btn" id="end-btn">今日はここまで</button>
+    <button class="end-btn" id="end-btn" data-i18n="end_session">今日はここまで</button>
   </header>
   <div class="progress-bar" id="progress-bar" onclick="toggleProgressDetail()">
     <div class="progress-header">
-      <span class="label" id="progress-label">本の色づき: 0%</span>
-      <span class="value" id="progress-msg-count">0 発言</span>
+      <span class="label" id="progress-label"></span>
+      <span class="value" id="progress-msg-count"></span>
     </div>
     <div class="progress-track">
       <div class="progress-fill" id="progress-fill" style="width:0%;"></div>
@@ -524,26 +534,26 @@
   </div>
   <div class="chat-messages" id="messages"></div>
   <div class="mode-bar" id="mode-bar-response">
-    <span class="mode-label">ことのはの応答</span>
+    <span class="mode-label" data-i18n="response_mode">ことのはの応答</span>
     <div class="mode-group">
-      <button type="button" class="mode-chip" data-resp="voice_text" onclick="setResponseMode('voice_text')">音声+文字</button>
-      <button type="button" class="mode-chip" data-resp="text_only" onclick="setResponseMode('text_only')">文字だけ</button>
+      <button type="button" class="mode-chip" data-resp="voice_text" onclick="setResponseMode('voice_text')" data-i18n="voice_text">音声+文字</button>
+      <button type="button" class="mode-chip" data-resp="text_only" onclick="setResponseMode('text_only')" data-i18n="text_only">文字だけ</button>
     </div>
-    <button type="button" class="mode-speed" id="tts-speed" onclick="cycleTTSSpeed()">速度 1.0x</button>
+    <button type="button" class="mode-speed" id="tts-speed" onclick="cycleTTSSpeed()"></button>
   </div>
   <div class="mode-bar" id="mode-bar-input">
-    <span class="mode-label">わたしの入力</span>
+    <span class="mode-label" data-i18n="input_mode">わたしの入力</span>
     <div class="mode-group">
-      <button type="button" class="mode-chip" data-input="voice" onclick="setInputMode('voice')">声で話す</button>
-      <button type="button" class="mode-chip" data-input="keyboard" onclick="setInputMode('keyboard')">文字で書く</button>
+      <button type="button" class="mode-chip" data-input="voice" onclick="setInputMode('voice')" data-i18n="voice_input">声で話す</button>
+      <button type="button" class="mode-chip" data-input="keyboard" onclick="setInputMode('keyboard')" data-i18n="keyboard_input">文字で書く</button>
     </div>
   </div>
   <div class="chat-input-area">
-    <button class="voice-btn" id="voice-btn" title="音声入力">&#x1F3A4;</button>
-    <textarea id="chat-input" placeholder="話したいことを書いてください" rows="1"></textarea>
+    <button class="voice-btn" id="voice-btn" title="Voice">&#x1F3A4;</button>
+    <textarea id="chat-input" data-i18n-placeholder="placeholder" placeholder="話したいことを書いてください" rows="1"></textarea>
     <button class="send-btn" id="send-btn">&#x25B6;</button>
   </div>
-  <div class="footer-tip">疲れたら「今日はここまで」で終了できます</div>
+  <div class="footer-tip" data-i18n="footer_tip">疲れたら「今日はここまで」で終了できます</div>
 </section>
 
 <!-- ========== KANJI CONFIRM OVERLAY ========== -->
@@ -559,15 +569,15 @@
   <div class="summary-header">
     <div class="sum-icon">&#x2728;</div>
     <div>
-      <h2>今日のまとめ</h2>
-      <p style="color:var(--muted); font-size:0.8em;">今日話してくれたこと</p>
+      <h2 data-i18n="summary_title">今日のまとめ</h2>
+      <p style="color:var(--muted); font-size:0.8em;" data-i18n="summary_sub">今日話してくれたこと</p>
     </div>
   </div>
-  <div id="summary-loading" class="loading-card"><div class="loader"></div><p>まとめを作成しています...</p></div>
+  <div id="summary-loading" class="loading-card"><div class="loader"></div><p data-i18n="summary_loading">まとめを作成しています...</p></div>
   <div id="summary-result" style="display:none;">
     <div id="summary-content"></div>
     <div class="summary-actions">
-      <button class="btn" onclick="showScreen('screen-dashboard')">本棚に戻る</button>
+      <button class="btn" onclick="showScreen('screen-dashboard')" data-i18n="back_to_shelf">本棚に戻る</button>
     </div>
   </div>
 </section>
@@ -579,27 +589,222 @@
 // CONFIG
 // ============================================================
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
-// Gemini API はサーバーサイドProxy経由（APIキー非露出）
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
+
+// ============================================================
+// i18n — 多言語対応
+// ============================================================
+const LANGS = {
+  ja: { name: "日本語", flag: "🇯🇵", speech: "ja-JP" },
+  en: { name: "English", flag: "🇺🇸", speech: "en-US" },
+  zh: { name: "中文", flag: "🇨🇳", speech: "zh-CN" },
+  ko: { name: "한국어", flag: "🇰🇷", speech: "ko-KR" },
+  es: { name: "Español", flag: "🇪🇸", speech: "es-ES" },
+  fr: { name: "Français", flag: "🇫🇷", speech: "fr-FR" },
+  pt: { name: "Português", flag: "🇧🇷", speech: "pt-BR" },
+  id: { name: "Bahasa Indonesia", flag: "🇮🇩", speech: "id-ID" },
+  th: { name: "ภาษาไทย", flag: "🇹🇭", speech: "th-TH" },
+  vi: { name: "Tiếng Việt", flag: "🇻🇳", speech: "vi-VN" },
+};
+
+const I18N = {
+  ja: {
+    app_title: "ことのは自叙伝",
+    tagline: "あなたの声が、本になる",
+    start_new: "最初から始める",
+    resume: "続きから話す",
+    book_progress: "本の色づき",
+    back: "← 戻る",
+    kotonoha: "ことのは",
+    end_session: "今日はここまで",
+    progress_label: "本の色づき",
+    utterances: "発言",
+    response_mode: "ことのはの応答",
+    voice_text: "音声+文字",
+    text_only: "文字だけ",
+    input_mode: "わたしの入力",
+    voice_input: "声で話す",
+    keyboard_input: "文字で書く",
+    placeholder: "話したいことを書いてください",
+    footer_tip: "疲れたら「今日はここまで」で終了できます",
+    summary_title: "今日のまとめ",
+    summary_sub: "今日話してくれたこと",
+    summary_loading: "まとめを作成しています...",
+    back_to_shelf: "本棚に戻る",
+    thinking: "考え中…",
+    preparing_voice: "音声を準備中…",
+    waiting: "返答を待っています…",
+    speed: "速度",
+    restored: "回の会話を復元しました",
+    deleted: "削除しました",
+    end_confirm: "今日の会話を終了しますか?",
+    short_confirm: "まだお話が短いですが、今日はここまでにしますか?",
+    mic_stop: "10秒間発言なし - マイク停止",
+    mic_denied: "マイクの使用が許可されていません",
+    voice_mode_on: "音声+文字で返答します",
+    text_mode_on: "文字だけで返答します",
+    voice_input_on: "声で話すモード",
+    keyboard_on: "文字で書くモード",
+    speak_prompt: "話してください (10秒静かで自動停止)",
+    error_retry: "ごめんなさい、うまくお話を聞き取れませんでした。もう一度お願いできますか?",
+    summary_fallback: "今日もたくさんお話を聞かせていただきました。ありがとうございました。",
+    score_none: "---",
+    score_low: "ほんのり",
+    score_mid: "色づき中",
+    score_high: "しっかり",
+    score_max: "完成",
+    session_label: "第",
+    session_unit: "回",
+    continued: "（続き）",
+    conversations: "往復の会話",
+    summarized: "まとめ済",
+    in_progress: "途中",
+    // onboarding
+    onboard_greeting: "こんにちは！私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？",
+    onboard_name_retry: "すみません、お名前をもう一度教えていただけますか？",
+    onboard_reader_ask: "さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。",
+    onboard_goal: "では、まず一緒にこの本のイメージを考えましょう。\n\n{name}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。",
+    reader_family: "ご家族",
+    reader_business: "お仕事の方々",
+    reader_self: "ご自身の記録",
+    reader_ack: "に向けて——素敵ですね。\n\n",
+    cat_childhood: "幼少期・家族構成",
+    cat_school: "学生時代・友人",
+    cat_career: "就職・キャリア",
+    cat_turning: "人生の転機・決断",
+    cat_love: "恋愛・パートナー",
+    cat_family: "家族・子育て",
+    cat_success: "最大の成功・誇り",
+    cat_failure: "最大の失敗・後悔",
+    cat_travel: "旅・移住・冒険",
+    cat_philosophy: "仕事の哲学・信念",
+    cat_gratitude: "感謝している人",
+    cat_message: "次世代へのメッセージ",
+    cat_dreams: "これからやりたいこと",
+    cat_oneword: "人生を一言で表すと",
+  },
+  en: {
+    app_title: "Kotonoha Memoir",
+    tagline: "Your voice becomes a book",
+    start_new: "Start New",
+    resume: "Continue",
+    book_progress: "Book Progress",
+    back: "← Back",
+    kotonoha: "Kotonoha",
+    end_session: "End for today",
+    progress_label: "Book Progress",
+    utterances: "messages",
+    response_mode: "AI Response",
+    voice_text: "Voice + Text",
+    text_only: "Text only",
+    input_mode: "Your input",
+    voice_input: "Speak",
+    keyboard_input: "Type",
+    placeholder: "Type what you want to say",
+    footer_tip: "Tap \"End for today\" when you're done",
+    summary_title: "Today's Summary",
+    summary_sub: "What you shared today",
+    summary_loading: "Creating summary...",
+    back_to_shelf: "Back to shelf",
+    thinking: "Thinking…",
+    preparing_voice: "Preparing voice…",
+    waiting: "Waiting for response…",
+    speed: "Speed",
+    restored: " session restored",
+    deleted: "Deleted",
+    end_confirm: "End today's conversation?",
+    short_confirm: "The conversation is still short. End here?",
+    mic_stop: "No speech for 10s - mic stopped",
+    mic_denied: "Microphone access denied",
+    voice_mode_on: "Voice + text mode",
+    text_mode_on: "Text only mode",
+    voice_input_on: "Voice input mode",
+    keyboard_on: "Keyboard mode",
+    speak_prompt: "Speak now (auto-stops after 10s silence)",
+    error_retry: "Sorry, I couldn't catch that. Could you try again?",
+    summary_fallback: "Thank you for sharing your stories today.",
+    score_none: "---",
+    score_low: "Started",
+    score_mid: "Growing",
+    score_high: "Rich",
+    score_max: "Complete",
+    session_label: "Session ",
+    session_unit: "",
+    continued: " (continued)",
+    conversations: " exchanges",
+    summarized: "Summarized",
+    in_progress: "In progress",
+    onboard_greeting: "Hello! I'm Kotonoha, a journalist here to listen to your story.\n\nTogether, we'll turn the path you've walked into a beautiful book.\n\nFirst, may I have your name?",
+    onboard_name_retry: "Sorry, could you tell me your name once more?",
+    onboard_reader_ask: ", nice to meet you.\n\nWho would you like this book to be for?\nFor example: \"my family\", \"colleagues\", \"just for myself\"—\nanything is fine.",
+    onboard_goal: "Let's start by imagining your book together.\n\nIf {name}'s life were a book, what would be the main theme?\n\nFor example…\n• Your career journey\n• Family stories\n• Values you've lived by\n• Life's adventures\n\nAnything goes. Just a rough idea is fine.",
+    reader_family: "Your family",
+    reader_business: "Your colleagues",
+    reader_self: "For yourself",
+    reader_ack: "—what a wonderful choice.\n\n",
+    cat_childhood: "Childhood & Family",
+    cat_school: "School & Friends",
+    cat_career: "Career Start",
+    cat_turning: "Turning Points",
+    cat_love: "Love & Partner",
+    cat_family: "Family & Children",
+    cat_success: "Greatest Success",
+    cat_failure: "Greatest Challenge",
+    cat_travel: "Travel & Adventure",
+    cat_philosophy: "Work Philosophy",
+    cat_gratitude: "Gratitude",
+    cat_message: "Message to Next Gen",
+    cat_dreams: "Future Dreams",
+    cat_oneword: "Life in One Word",
+  },
+};
+
+// Fill missing languages with English as fallback
+for (const lang of Object.keys(LANGS)) {
+  if (!I18N[lang]) I18N[lang] = { ...I18N.en };
+}
+
+let currentLang = localStorage.getItem("kotonoha_lang") || null;
+
+function t(key) {
+  const lang = currentLang || "en";
+  return I18N[lang]?.[key] || I18N.en[key] || key;
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem("kotonoha_lang", lang);
+  applyI18N();
+}
+
+function applyI18N() {
+  // Update all elements with data-i18n attribute
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+}
 
 // ============================================================
 // 14 CATEGORIES (自叙伝取れ高)
 // ============================================================
 const CATEGORIES = [
-  { key: "childhood",       label: "幼少期・家族構成",   weight: 3 },
-  { key: "school",          label: "学生時代・友人",     weight: 2 },
-  { key: "career_start",    label: "就職・キャリア",     weight: 3 },
-  { key: "turning_point",   label: "人生の転機・決断",   weight: 4 },
-  { key: "love_partner",    label: "恋愛・パートナー",   weight: 2 },
-  { key: "family_children", label: "家族・子育て",       weight: 3 },
-  { key: "greatest_success",label: "最大の成功・誇り",   weight: 4 },
-  { key: "greatest_failure",label: "最大の失敗・後悔",   weight: 4 },
-  { key: "travel",          label: "旅・移住・冒険",     weight: 1 },
-  { key: "work_philosophy", label: "仕事の哲学・信念",   weight: 3 },
-  { key: "gratitude",       label: "感謝している人",     weight: 2 },
-  { key: "message_next_gen",label: "次世代へのメッセージ",weight: 4 },
-  { key: "future_dreams",   label: "これからやりたいこと",weight: 2 },
-  { key: "life_in_a_word",  label: "人生を一言で表すと", weight: 2 },
+  { key: "childhood",       labelKey: "cat_childhood",   weight: 3 },
+  { key: "school",          labelKey: "cat_school",      weight: 2 },
+  { key: "career_start",    labelKey: "cat_career",      weight: 3 },
+  { key: "turning_point",   labelKey: "cat_turning",     weight: 4 },
+  { key: "love_partner",    labelKey: "cat_love",        weight: 2 },
+  { key: "family_children", labelKey: "cat_family",      weight: 3 },
+  { key: "greatest_success",labelKey: "cat_success",     weight: 4 },
+  { key: "greatest_failure",labelKey: "cat_failure",     weight: 4 },
+  { key: "travel",          labelKey: "cat_travel",      weight: 1 },
+  { key: "work_philosophy", labelKey: "cat_philosophy",  weight: 3 },
+  { key: "gratitude",       labelKey: "cat_gratitude",   weight: 2 },
+  { key: "message_next_gen",labelKey: "cat_message",     weight: 4 },
+  { key: "future_dreams",   labelKey: "cat_dreams",      weight: 2 },
+  { key: "life_in_a_word",  labelKey: "cat_oneword",     weight: 2 },
 ];
 
 // ============================================================
@@ -654,6 +859,7 @@ function getSessions() {
 function showScreen(id) {
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  applyI18N();
   if (id === "screen-dashboard") renderDashboard();
   if (id === "screen-chat") {
     applyResponseModeUI();
@@ -701,8 +907,8 @@ function renderChapterProgress() {
     const cls = score === 0 ? "score-0" : score < 30 ? "score-low" : score < 60 ? "score-mid" : score < 90 ? "score-high" : "score-max";
     return `<div class="chapter-item">
       <div class="chapter-color" style="background:${color};"></div>
-      <span class="chapter-name">${cat.label}</span>
-      <span class="chapter-score ${cls}">${score > 0 ? getScoreLabel(score) : "---"}</span>
+      <span class="chapter-name">${t(cat.labelKey)}</span>
+      <span class="chapter-score ${cls}">${score > 0 ? getScoreLabel(score) : t("score_none")}</span>
     </div>`;
   }).join("");
 }
@@ -716,10 +922,10 @@ function scoreToColor(score) {
 }
 
 function getScoreLabel(score) {
-  if (score < 30) return "ほんのり";
-  if (score < 60) return "色づき中";
-  if (score < 90) return "しっかり";
-  return "完成";
+  if (score < 30) return t("score_low");
+  if (score < 60) return t("score_mid");
+  if (score < 90) return t("score_high");
+  return t("score_max");
 }
 
 function renderSessionHistory() {
@@ -775,16 +981,13 @@ async function startNewSession() {
 
   showScreen("screen-chat");
   document.getElementById("messages").innerHTML = "";
-  document.getElementById("chat-topic").textContent = `第${state.sessionCount}回`;
+  document.getElementById("chat-topic").textContent = `${t("session_label")}${state.sessionCount}${t("session_unit")}`;
   resetProgressMeter();
 
-  // Audio unlockを先に試みる（失敗しても続行）
   await unlockAudioOnce().catch(() => {});
 
-  const firstMsg = `こんにちは！私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？`;
-
   onboardingStep = "ask_name";
-  await speakAIMessage(firstMsg);
+  await speakAIMessage(t("onboard_greeting"));
 }
 
 // Handle onboarding responses (intercept before normal AI call)
@@ -798,13 +1001,13 @@ async function handleOnboarding(userText) {
       .replace(/^名前は/g, "")
       .trim();
     if (!name || name.length > 20) {
-      await speakAIMessage("すみません、お名前をもう一度教えていただけますか？");
+      await speakAIMessage(t("onboard_name_retry"));
       return true;
     }
     state.userName = name;
     saveUserProfile();
     onboardingStep = "ask_reader";
-    await speakAIMessage(`${name}さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
+    await speakAIMessage(`${name}${t("onboard_reader_ask")}`);
     return true;
   }
   if (onboardingStep === "ask_reader") {
@@ -818,14 +1021,14 @@ async function handleOnboarding(userText) {
     saveUserProfile();
     onboardingStep = null;
 
-    document.getElementById("chat-topic").textContent = "第1回";
+    document.getElementById("chat-topic").textContent = `${t("session_label")}1${t("session_unit")}`;
 
-    const readerLabel = readerType === "grandchildren" ? "ご家族" :
-                        readerType === "business" ? "お仕事の方々" :
-                        readerType === "self" ? "ご自身の記録" : "";
-    const readerAck = readerLabel ? `${readerLabel}に向けて——素敵ですね。\n\n` : "";
+    const readerLabel = readerType === "grandchildren" ? t("reader_family") :
+                        readerType === "business" ? t("reader_business") :
+                        readerType === "self" ? t("reader_self") : "";
+    const readerAck = readerLabel ? `${readerLabel}${t("reader_ack")}` : "";
 
-    await speakAIMessage(`${readerAck}では、まず一緒にこの本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。`);
+    await speakAIMessage(`${readerAck}${t("onboard_goal").replace("{name}", state.userName)}`);
 
     document.getElementById("greeting-text").textContent = `${state.userName}さんの自叙伝`;
     return true;
@@ -854,7 +1057,8 @@ function getWeakestChapter() {
 function buildSystemPrompt() {
   const msgCount = state.conversation.filter(m => m.role === "user").length;
 
-  return `You are "Kotonoha", a warm and empathetic Japanese AI journalist specialized in autobiography creation. Always respond in Japanese only.
+  const langName = LANGS[currentLang]?.name || "Japanese";
+  return `You are "Kotonoha", a warm and empathetic AI journalist specialized in autobiography creation. Always respond in ${langName} only.
 
 CONVERSATION RULES:
 1. Ask only ONE question at a time. Never combine multiple questions.
@@ -921,11 +1125,11 @@ function hideTyping() { const t = document.getElementById("typing-indicator"); i
 async function speakAIMessage(text) {
   const voiceMode = isTTSEnabled();
   const thinkStart = Date.now();
-  showTyping("考え中…");
+  showTyping(t("thinking"));
   // 最低限の「考え中」表示時間
   await thinkingDelay(thinkStart);
   if (voiceMode) {
-    updateTypingLabel("音声を準備中…");
+    updateTypingLabel(t("preparing_voice"));
     const ttsData = await fetchTTSData(text);
     hideTyping();
     addMessage("ai", text);
@@ -964,7 +1168,7 @@ async function sendMessage() {
   if (!text) return;
   // 生成中でも送信ボタン自体は押せるが、二重送信を防ぐ
   if (state.isGenerating) {
-    showToast("返答を待っています…");
+    showToast(t("waiting"));
     return;
   }
   if (isListening) {
@@ -986,12 +1190,12 @@ async function sendMessage() {
   document.getElementById("send-btn").disabled = true;
   const voiceMode = isTTSEnabled();
   const thinkStart = Date.now();
-  showTyping("考え中…");
+  showTyping(t("thinking"));
   try {
     const reply = await callKotonohaChat();
     await thinkingDelay(thinkStart);
     if (voiceMode) {
-      updateTypingLabel("音声を準備中…");
+      updateTypingLabel(t("preparing_voice"));
       const ttsData = await fetchTTSData(reply);
       hideTyping();
       addMessage("ai", reply);
@@ -1007,7 +1211,7 @@ async function sendMessage() {
   } catch (e) {
     hideTyping();
     console.error("sendMessage error:", e);
-    addMessage("ai", "ごめんなさい、うまくお話を聞き取れませんでした。もう一度お願いできますか?");
+    addMessage("ai", t("error_retry"));
   } finally {
     state.isGenerating = false;
     document.getElementById("send-btn").disabled = false;
@@ -1343,7 +1547,7 @@ function initSpeechRecognition() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return null;
   const rec = new SR();
-  rec.lang = "ja-JP";
+  rec.lang = LANGS[currentLang]?.speech || "ja-JP";
   rec.continuous = true;
   rec.interimResults = true;
   rec.maxAlternatives = 1;
@@ -1578,7 +1782,7 @@ function speakBrowserFallback(text) {
   try {
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ja-JP"; utter.rate = getTTSSpeed(); utter.volume = 1.0;
+    utter.lang = LANGS[currentLang]?.speech || "ja-JP"; utter.rate = getTTSSpeed(); utter.volume = 1.0;
     window.speechSynthesis.speak(utter);
   } catch (e) {}
 }
@@ -1605,8 +1809,38 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
+// ============================================================
+// LANGUAGE SELECT SCREEN
+// ============================================================
+function renderLangSelect() {
+  const container = document.getElementById("lang-buttons");
+  container.innerHTML = Object.entries(LANGS).map(([code, info]) =>
+    `<button class="reader-btn" onclick="chooseLang('${code}')" style="display:flex;align-items:center;gap:12px;">
+      <span style="font-size:1.5em;">${info.flag}</span>
+      <span class="reader-label">${info.name}</span>
+    </button>`
+  ).join("");
+}
+
+function chooseLang(code) {
+  setLang(code);
+  showScreen("screen-dashboard");
+}
+
+// ============================================================
+// INIT
+// ============================================================
 loadUserProfile();
-renderDashboard();
+
+if (!currentLang) {
+  // 初回：言語選択画面を表示
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen-lang").classList.add("active");
+  renderLangSelect();
+} else {
+  applyI18N();
+  renderDashboard();
+}
 </script>
 </body>
 </html>
