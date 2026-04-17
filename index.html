@@ -973,8 +973,13 @@ function deleteSessionLocal(idx) {
 let onboardingStep = null; // null = not onboarding, "ask_name" | "ask_reader" | "done"
 
 async function startNewSession() {
-  // 新規セッション：クリーンな状態で開始
+  // 新規セッション：完全にクリーンな状態で開始
+  // 過去のプロフィール・履歴を引き継がない
+  state.userName = null;
+  state.readerType = null;
   state.conversation = [];
+  state.lifeFacts = [];
+  state.chapterScores = {};
   state.sessionId = "local_" + Date.now();
   state.sessionCount++;
   localStorage.setItem("kotonoha_session_count", String(state.sessionCount));
