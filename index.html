@@ -475,9 +475,11 @@
     <div id="chapter-list"></div>
   </div>
 
-  <div style="text-align:center; margin-top:16px;">
-    <button onclick="changeLang()" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:20px; font-size:0.78em; cursor:pointer; font-family:inherit;" id="change-lang-btn">🌐</button>
-    <span style="color:var(--muted); font-size:0.7em; margin-left:6px;" id="current-version"></span>
+  <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
+    <button onclick="toggleTTSMute()" id="dash-tts-toggle" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:20px; font-size:0.82em; cursor:pointer; font-family:inherit;">🔊</button>
+    <button onclick="cycleTTSSpeed()" id="dash-tts-speed" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 14px; border-radius:20px; font-size:0.78em; cursor:pointer; font-family:inherit;">1.0x</button>
+    <button onclick="changeLang()" id="change-lang-btn" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:20px; font-size:0.78em; cursor:pointer; font-family:inherit;">🌐</button>
+    <span style="color:var(--muted); font-size:0.7em;" id="current-version"></span>
   </div>
 </section>
 
@@ -527,6 +529,8 @@
       <div class="info-title" data-i18n="kotonoha">ことのは</div>
       <div class="info-topic" id="chat-topic"></div>
     </div>
+    <button onclick="toggleTTSMute()" id="chat-tts-toggle" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 8px; border-radius:14px; font-size:0.75em; cursor:pointer; flex-shrink:0;">🔊</button>
+    <button onclick="cycleTTSSpeed()" id="chat-tts-speed" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:4px 6px; border-radius:14px; font-size:0.68em; cursor:pointer; flex-shrink:0;">1.0x</button>
     <button class="end-btn" id="end-btn" data-i18n="end_session">今日はここまで</button>
   </header>
   <div class="progress-bar" id="progress-bar" onclick="toggleProgressDetail()">
@@ -540,21 +544,6 @@
     <div class="progress-detail" id="progress-detail"></div>
   </div>
   <div class="chat-messages" id="messages"></div>
-  <div class="mode-bar" id="mode-bar-response" style="display:none;">
-    <span class="mode-label" data-i18n="response_mode">ことのはの応答</span>
-    <div class="mode-group">
-      <button type="button" class="mode-chip" data-resp="voice_text" onclick="setResponseMode('voice_text')" data-i18n="voice_text">音声+文字</button>
-      <button type="button" class="mode-chip" data-resp="text_only" onclick="setResponseMode('text_only')" data-i18n="text_only">文字だけ</button>
-    </div>
-    <button type="button" class="mode-speed" id="tts-speed" onclick="cycleTTSSpeed()"></button>
-  </div>
-  <div class="mode-bar" id="mode-bar-input" style="display:none;">
-    <span class="mode-label" data-i18n="input_mode">わたしの入力</span>
-    <div class="mode-group">
-      <button type="button" class="mode-chip" data-input="voice" onclick="setInputMode('voice')" data-i18n="voice_input">声で話す</button>
-      <button type="button" class="mode-chip" data-input="keyboard" onclick="setInputMode('keyboard')" data-i18n="keyboard_input">文字で書く</button>
-    </div>
-  </div>
   <div class="chat-input-area">
     <button class="voice-btn" id="voice-btn" title="Voice">&#x1F3A4;</button>
     <textarea id="chat-input" data-i18n-placeholder="placeholder" placeholder="話したいことを書いてください" rows="1"></textarea>
@@ -595,7 +584,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.2.3";
+const APP_VERSION = "0.3.0";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -872,8 +861,7 @@ function showScreen(id) {
   applyI18N();
   if (id === "screen-dashboard") renderDashboard();
   if (id === "screen-chat") {
-    applyResponseModeUI();
-    applyInputModeUI();
+    updateAllTTSButtons();
   }
 }
 
@@ -1676,70 +1664,50 @@ document.getElementById("voice-btn").onclick = async () => {
 };
 
 // ============================================================
-// TTS — reuse Risa's Studio API
+// TTS Controls — 消音 / 倍速
 // ============================================================
-const TTS_SPEEDS = [0.9, 1.0, 1.25, 1.5];
-let ttsSpeedIndex = parseInt(localStorage.getItem("kotonoha_tts_speed") || "1", 10);
-function refreshTTSSpeedButton() {
-  const btn = document.getElementById("tts-speed");
-  const speed = TTS_SPEEDS[ttsSpeedIndex];
-  btn.textContent = `速度 ${speed}x`;
-  btn.classList.toggle("on", speed !== 1.0);
+const TTS_SPEEDS = [1.0, 1.25, 1.5, 2.0];
+let ttsSpeedIndex = parseInt(localStorage.getItem("kotonoha_tts_speed") || "0", 10);
+let ttsMuted = localStorage.getItem("kotonoha_tts_muted") === "true";
+
+function updateAllTTSButtons() {
+  const icon = ttsMuted ? "🔇" : "🔊";
+  const speed = TTS_SPEEDS[ttsSpeedIndex] + "x";
+  // ダッシュボードのボタン
+  const dashToggle = document.getElementById("dash-tts-toggle");
+  const dashSpeed = document.getElementById("dash-tts-speed");
+  if (dashToggle) dashToggle.textContent = icon;
+  if (dashSpeed) { dashSpeed.textContent = speed; dashSpeed.style.display = ttsMuted ? "none" : ""; }
+  // チャットのボタン
+  const chatToggle = document.getElementById("chat-tts-toggle");
+  const chatSpeed = document.getElementById("chat-tts-speed");
+  if (chatToggle) chatToggle.textContent = icon;
+  if (chatSpeed) { chatSpeed.textContent = speed; chatSpeed.style.display = ttsMuted ? "none" : ""; }
 }
+
+function toggleTTSMute() {
+  ttsMuted = !ttsMuted;
+  localStorage.setItem("kotonoha_tts_muted", String(ttsMuted));
+  updateAllTTSButtons();
+  if (ttsMuted) { stopCurrentAudio(); }
+  showToast(ttsMuted ? "🔇 消音" : "🔊 音声ON");
+}
+
 function cycleTTSSpeed() {
   ttsSpeedIndex = (ttsSpeedIndex + 1) % TTS_SPEEDS.length;
   localStorage.setItem("kotonoha_tts_speed", String(ttsSpeedIndex));
-  refreshTTSSpeedButton();
-  showToast(`声の速度: ${TTS_SPEEDS[ttsSpeedIndex]}x`);
+  updateAllTTSButtons();
+  showToast(TTS_SPEEDS[ttsSpeedIndex] + "x");
   if (ttsAudioEl && !ttsAudioEl.paused) {
     try { ttsAudioEl.playbackRate = TTS_SPEEDS[ttsSpeedIndex]; } catch(e) {}
   }
 }
-function getTTSSpeed() { return TTS_SPEEDS[ttsSpeedIndex]; }
-refreshTTSSpeedButton();
 
-// Response / Input mode
-function getResponseMode() {
-  const v = localStorage.getItem("kotonoha_resp_mode");
-  return (v === "text_only" || v === "voice_text") ? v : "voice_text";
-}
-function getInputMode() {
-  const v = localStorage.getItem("kotonoha_input_mode");
-  return (v === "keyboard" || v === "voice") ? v : "voice";
-}
-function setResponseMode(mode) {
-  if (mode !== "voice_text" && mode !== "text_only") return;
-  unlockAudioOnce();
-  localStorage.setItem("kotonoha_resp_mode", mode);
-  applyResponseModeUI();
-  if (mode === "text_only") { stopCurrentAudio(); currentAudio = null; }
-  showToast(mode === "voice_text" ? "音声+文字で返答します" : "文字だけで返答します");
-}
-function setInputMode(mode) {
-  if (mode !== "voice" && mode !== "keyboard") return;
-  localStorage.setItem("kotonoha_input_mode", mode);
-  applyInputModeUI();
-  if (mode === "keyboard" && isListening) {
-    try { recognition && recognition.stop(); } catch(e) {}
-    stopVoiceInput();
-  }
-  if (mode === "keyboard") {
-    const ta = document.getElementById("chat-input");
-    if (ta) setTimeout(() => ta.focus(), 100);
-  }
-  showToast(mode === "voice" ? "声で話すモード" : "文字で書くモード");
-}
-function applyResponseModeUI() {
-  const mode = getResponseMode();
-  document.querySelectorAll(".mode-chip[data-resp]").forEach(b => b.classList.toggle("active", b.dataset.resp === mode));
-}
-function applyInputModeUI() {
-  const mode = getInputMode();
-  document.querySelectorAll(".mode-chip[data-input]").forEach(b => b.classList.toggle("active", b.dataset.input === mode));
-  document.body.classList.toggle("input-mode-voice", mode === "voice");
-  document.body.classList.toggle("input-mode-keyboard", mode === "keyboard");
-}
-function isTTSEnabled() { return getResponseMode() === "voice_text"; }
+function getTTSSpeed() { return TTS_SPEEDS[ttsSpeedIndex]; }
+function isTTSEnabled() { return !ttsMuted; }
+updateAllTTSButtons();
+
+// (旧mode-bar関連は削除。TTS制御はupdateAllTTSButtons/toggleTTSMute/cycleTTSSpeedに統合)
 
 // ============================================================
 // AUDIO (iOS-safe pattern from Risa's Studio)
