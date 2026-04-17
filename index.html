@@ -584,7 +584,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.3.1";
+const APP_VERSION = "0.3.2";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -1161,20 +1161,20 @@ async function sayAI(text) {
   if (isTTSEnabled()) {
     updateTypingLabel(i18n("preparing_voice"));
     try {
-      await unlockAudioOnce();
       const ttsData = await fetchTTSData(text);
       if (state.sessionId !== sid) { hideTyping(); return; }
       // Step 3: テキスト表示 + 音声再生を同時に
       hideTyping();
       addMessage("ai", text);
-      if (ttsData) playTTSData(ttsData, text);
+      if (ttsData) {
+        // iOS: audio要素の再生は事前unlockに依存しない方式
+        playTTSData(ttsData, text);
+      }
     } catch(e) {
-      // TTS失敗 → テキストだけ表示
       hideTyping();
       addMessage("ai", text);
     }
   } else {
-    // 消音モード → テキストだけ表示
     hideTyping();
     addMessage("ai", text);
   }
@@ -1187,8 +1187,13 @@ function thinkingDelay(startTime) {
   return remaining > 0 ? new Promise(r => setTimeout(r, remaining)) : Promise.resolve();
 }
 
-document.getElementById("send-btn").onclick = sendMessage;
+document.getElementById("send-btn").onclick = () => {
+  unlockAudioOnce().catch(() => {});
+  sendMessage();
+};
 document.getElementById("start-new-btn").addEventListener("click", () => {
+  // iOS: ユーザージェスチャー内でaudio unlockしておく（後のTTS再生に必要）
+  unlockAudioOnce().catch(() => {});
   try { startNewSession(); } catch(e) { console.error("startNewSession error:", e); }
 });
 document.getElementById("chat-input").addEventListener("keydown", e => {
