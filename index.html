@@ -580,7 +580,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.4.0";
+const APP_VERSION = "0.4.1";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -1444,12 +1444,21 @@ function resumeSession(idx) {
 // END SESSION
 // ============================================================
 function endSessionConfirm() {
+  // 音声を即停止
+  stopCurrentAudio();
+  if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch(e){} }
+  // セッションIDをクリア（進行中のsayAIをキャンセル）
+  state.sessionId = null;
+
   if (state.conversation.length < 2) {
     showScreen("screen-dashboard");
     return;
   }
-  if (confirm("今日の会話を終了しますか?")) {
+  if (confirm(i18n("end_confirm"))) {
     endSession();
+  } else {
+    // キャンセル → セッションIDを復元
+    state.sessionId = "local_" + Date.now();
   }
 }
 
@@ -1868,7 +1877,10 @@ if (!currentLang) {
 const verEl = document.getElementById("current-version");
 if (verEl) verEl.textContent = "v" + APP_VERSION;
 const langBtn = document.getElementById("change-lang-btn");
-if (langBtn && currentLang) langBtn.textContent = "🌐 " + (LANGS[currentLang]?.name || currentLang);
+if (langBtn && currentLang) langBtn.textContent = "🌐";
+// バージョン表示
+const verEl = document.getElementById("current-version");
+if (verEl) verEl.textContent = "v" + APP_VERSION;
 </script>
 </body>
 </html>
