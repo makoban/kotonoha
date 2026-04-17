@@ -308,8 +308,7 @@
   }
   .send-btn:active { transform: scale(0.92); }
   .send-btn:disabled { opacity: 0.4; }
-  body.input-mode-keyboard #voice-btn { display: none; }
-  body.input-mode-voice .chat-input-area textarea { flex: 0.6; }
+  /* マイクは常に表示 */
 
   /* ========== Progress Bar (in chat) ========== */
   .progress-bar {
@@ -454,7 +453,7 @@
   <div class="dash-header">
     <div class="logo-icon">&#x1F4D6;</div>
     <div class="greeting">
-      <h1><span data-i18n="app_title">ことのは自叙伝</span> <span class="version-badge" id="app-version">v0.2.0</span></h1>
+      <h1><span data-i18n="app_title">ことのは自叙伝</span> <span class="version-badge" id="app-version">v0.2.1</span></h1>
       <p id="greeting-text" data-i18n="tagline">あなたの声が、本になる</p>
     </div>
   </div>
@@ -596,7 +595,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.2.0";
+const APP_VERSION = "0.2.1";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
