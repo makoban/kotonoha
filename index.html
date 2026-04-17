@@ -473,7 +473,7 @@
   </header>
   <div class="setup-card">
     <h3>お名前を教えてください</h3>
-    <input id="setup-name" type="text" placeholder="例: 田中 芳子">
+    <input id="setup-name" type="text" placeholder="例: 山田 誠">
   </div>
   <div class="setup-card">
     <h3>この本を誰に読んでほしいですか?</h3>
@@ -577,8 +577,8 @@
 // CONFIG
 // ============================================================
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
-const GEMINI_API_KEY = "AIzaSyDYcmYQ58oEaDbTq_zV-M5itTZzpc1WYmw";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+// Gemini API はサーバーサイドProxy経由（APIキー非露出）
+const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
 // ============================================================
 // 14 CATEGORIES (自叙伝取れ高)
@@ -757,11 +757,25 @@ function deleteSessionLocal(idx) {
 // ============================================================
 // SESSION START
 // ============================================================
+// Onboarding state machine
+let onboardingStep = null; // null = not onboarding, "ask_name" | "ask_reader" | "done"
+
 function startNewSession() {
+  // 初回: プロフィール未設定 → 対話でオンボーディング
   if (!state.userName) {
-    showScreen("screen-setup");
+    state.conversation = [];
+    state.sessionId = "local_" + Date.now();
+    showScreen("screen-chat");
+    document.getElementById("messages").innerHTML = "";
+    document.getElementById("chat-topic").textContent = "はじめまして";
+    resetProgressMeter();
+
+    onboardingStep = "ask_name";
+    addMessage("ai", "はじめまして。私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？");
     return;
   }
+
+  // 通常セッション
   state.sessionCount++;
   localStorage.setItem("kotonoha_session_count", String(state.sessionCount));
   state.conversation = [];
@@ -776,7 +790,7 @@ function startNewSession() {
   const phase = getPhase();
   let firstMsg;
   if (state.sessionCount === 1) {
-    firstMsg = `こんにちは、${state.userName}さん！\n\n私は「ことのは」、あなたの人生のお話を聞く記者です。\nこれから少しずつ、あなただけの本を作っていきましょう。\n\nまず…今朝のご飯は何を召し上がりましたか?`;
+    firstMsg = `${state.userName}さん、よろしくお願いします！\n\nでは早速、今日のお話を始めましょう。\n\nまず……最近、ふと思い出すことってありますか？\nどんな些細なことでも構いません。`;
   } else if (phase === 1) {
     const lastSummary = state.sessionSummaries[state.sessionSummaries.length - 1];
     const hook = lastSummary ? `\n\n前回は${lastSummary.topics?.[0] || "いろいろなこと"}について聞かせてもらいました。` : "";
@@ -788,6 +802,58 @@ function startNewSession() {
     firstMsg = `${state.userName}さん、こんにちは！\n\n本の色づきを見てみると、「${weakest.label}」のところがまだ少し薄いですね。\n\n今日はそのあたりの話を聞かせてもらえますか?\nそれとも、別に話したいことがありますか?`;
   }
   addMessage("ai", firstMsg);
+}
+
+// Handle onboarding responses (intercept before normal AI call)
+function handleOnboarding(userText) {
+  if (onboardingStep === "ask_name") {
+    // Extract name from response
+    let name = userText.trim()
+      .replace(/です[。．.]?$/g, "")
+      .replace(/と申します[。．.]?$/g, "")
+      .replace(/と言います[。．.]?$/g, "")
+      .replace(/^私は/g, "")
+      .replace(/^名前は/g, "")
+      .trim();
+    if (!name || name.length > 20) {
+      addMessage("ai", "すみません、お名前をもう一度教えていただけますか？");
+      return true; // handled
+    }
+    state.userName = name;
+    saveUserProfile();
+    onboardingStep = "ask_reader";
+    addMessage("ai", `${name}さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
+    return true;
+  }
+  if (onboardingStep === "ask_reader") {
+    // Classify reader type from free text
+    const text = userText.toLowerCase();
+    let readerType = "undecided";
+    if (/家族|息子|娘|孫|子供|妻|夫|嫁/.test(text)) readerType = "grandchildren";
+    else if (/会社|社員|後輩|仕事|同僚|部下|後継/.test(text)) readerType = "business";
+    else if (/自分|記録|振り返|棚卸/.test(text)) readerType = "self";
+
+    state.readerType = readerType;
+    saveUserProfile();
+    onboardingStep = null;
+
+    // Transition to first real session
+    state.sessionCount = 1;
+    localStorage.setItem("kotonoha_session_count", "1");
+    document.getElementById("chat-topic").textContent = "第1回";
+
+    const readerLabel = readerType === "grandchildren" ? "ご家族" :
+                        readerType === "business" ? "お仕事の方々" :
+                        readerType === "self" ? "ご自身のため" : "";
+    const readerAck = readerLabel ? `${readerLabel}に向けて——素敵ですね。\n\n` : "";
+
+    addMessage("ai", `${readerAck}では早速、今日のお話を始めましょう。\n\n${state.userName}さん、最近ふと思い出すことってありますか？\nどんな些細なことでも構いません。`);
+
+    // Render dashboard greeting
+    document.getElementById("greeting-text").textContent = `${state.userName}さんの自叙伝`;
+    return true;
+  }
+  return false; // not in onboarding
 }
 
 function getPhase() {
@@ -913,6 +979,12 @@ async function sendMessage() {
   input.style.height = "auto";
   input.blur();
   addMessage("user", text);
+
+  // オンボーディング中はAI呼び出しせずローカル処理
+  if (onboardingStep && handleOnboarding(text)) {
+    return;
+  }
+
   state.isGenerating = true;
   const voiceMode = isTTSEnabled();
   const thinkStart = Date.now();
@@ -944,13 +1016,12 @@ async function sendMessage() {
 async function callKotonohaChat() {
   const systemPrompt = buildSystemPrompt();
 
-  // Gemini APIの形式に変換（systemInstructionを使用）
   const contents = state.conversation.map(m => ({
     role: m.role === "ai" ? "model" : "user",
     parts: [{ text: m.content }]
   }));
 
-  const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const res = await fetch(KOTONOHA_API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -964,7 +1035,7 @@ async function callKotonohaChat() {
     })
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message || "Gemini API error");
+  if (data.error) throw new Error(data.error.message || "API error");
   const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!reply) throw new Error("empty response");
   return reply.trim();
@@ -1185,7 +1256,7 @@ async function generateSessionSummary() {
 
   const summaryPrompt = `以下の会話を200字以内で要約してください。話された主要なエピソードと出てきた感情を含めてください。\n\n${convText}`;
 
-  const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+  const res = await fetch(KOTONOHA_API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
