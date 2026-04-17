@@ -563,7 +563,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.5.0";
+const APP_VERSION = "0.5.1";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -1861,9 +1861,6 @@ const verEl = document.getElementById("current-version");
 if (verEl) verEl.textContent = "v" + APP_VERSION;
 const langBtn = document.getElementById("change-lang-btn");
 if (langBtn && currentLang) langBtn.textContent = "🌐";
-// バージョン表示
-const verEl = document.getElementById("current-version");
-if (verEl) verEl.textContent = "v" + APP_VERSION;
 </script>
 </body>
 </html>
