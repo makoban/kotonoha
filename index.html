@@ -790,7 +790,7 @@ function startNewSession() {
   const phase = getPhase();
   let firstMsg;
   if (state.sessionCount === 1) {
-    firstMsg = `${state.userName}さん、よろしくお願いします！\n\nでは早速、今日のお話を始めましょう。\n\nまず……最近、ふと思い出すことってありますか？\nどんな些細なことでも構いません。`;
+    firstMsg = `${state.userName}さん、こんにちは！\n\nまず一緒に、この本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\nざっくりで大丈夫です。`;
   } else if (phase === 1) {
     const lastSummary = state.sessionSummaries[state.sessionSummaries.length - 1];
     const hook = lastSummary ? `\n\n前回は${lastSummary.topics?.[0] || "いろいろなこと"}について聞かせてもらいました。` : "";
@@ -844,10 +844,10 @@ function handleOnboarding(userText) {
 
     const readerLabel = readerType === "grandchildren" ? "ご家族" :
                         readerType === "business" ? "お仕事の方々" :
-                        readerType === "self" ? "ご自身のため" : "";
+                        readerType === "self" ? "ご自身の記録" : "";
     const readerAck = readerLabel ? `${readerLabel}に向けて——素敵ですね。\n\n` : "";
 
-    addMessage("ai", `${readerAck}では早速、今日のお話を始めましょう。\n\n${state.userName}さん、最近ふと思い出すことってありますか？\nどんな些細なことでも構いません。`);
+    addMessage("ai", `${readerAck}では、まず一緒にこの本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。`);
 
     // Render dashboard greeting
     document.getElementById("greeting-text").textContent = `${state.userName}さんの自叙伝`;
@@ -897,9 +897,9 @@ CONVERSATION RULES:
 6. Actively ask about sensory details ("What did it smell like at that time?").
 
 CURRENT PHASE: Phase ${phase}
-${phase === 1 ? "Discovery phase: Lead naturally from daily topics to life stories. Never mention 'writing a book' or 'chapters'." : ""}
-${phase === 2 ? "Chapter proposal phase: Naturally propose book structure at right moments. Never force it — co-create with user." : ""}
-${phase === 3 ? "Coverage tracking phase: Naturally guide toward low-score chapters, but never force." : ""}
+${phase === 1 ? "Goal-setting & Discovery phase: First, help the user define the vision for their book together — what themes, what tone, who it's for. Ask what kind of book they imagine. Then gradually start collecting stories. Never jump straight into 'tell me about your childhood'. Let the user lead the direction. Be collaborative, not interrogative." : ""}
+${phase === 2 ? "Chapter proposal phase: Based on collected stories, naturally propose a book structure. Co-create the table of contents with the user. Never force a structure — suggest and ask for feedback." : ""}
+${phase === 3 ? "Coverage tracking phase: Naturally guide toward low-score chapters, but never force. Remind the user of the vision they set in Phase 1." : ""}
 
 USER INFO:
 Name: ${state.userName}
@@ -967,10 +967,17 @@ function autoGrow() {
 function isMobile() { return /iPhone|iPad|Android/i.test(navigator.userAgent); }
 
 async function sendMessage() {
-  await unlockAudioOnce();
+  // Audio unlock は送信をブロックしない（失敗しても続行）
+  unlockAudioOnce().catch(() => {});
+
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
-  if (!text || state.isGenerating) return;
+  if (!text) return;
+  // 生成中でも送信ボタン自体は押せるが、二重送信を防ぐ
+  if (state.isGenerating) {
+    showToast("返答を待っています…");
+    return;
+  }
   if (isListening) {
     try { recognition && recognition.stop(); } catch(e){}
     stopVoiceInput();
@@ -986,6 +993,7 @@ async function sendMessage() {
   }
 
   state.isGenerating = true;
+  document.getElementById("send-btn").disabled = true;
   const voiceMode = isTTSEnabled();
   const thinkStart = Date.now();
   showTyping();
@@ -1007,9 +1015,11 @@ async function sendMessage() {
     localAnalyzeProgress();
   } catch (e) {
     hideTyping();
+    console.error("sendMessage error:", e);
     addMessage("ai", "ごめんなさい、うまくお話を聞き取れませんでした。もう一度お願いできますか?");
   } finally {
     state.isGenerating = false;
+    document.getElementById("send-btn").disabled = false;
   }
 }
 
