@@ -595,7 +595,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.2.1";
+const APP_VERSION = "0.2.2";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -982,9 +982,8 @@ function deleteSessionLocal(idx) {
 // Onboarding state machine
 let onboardingStep = null; // null = not onboarding, "ask_name" | "ask_reader" | "done"
 
-async function startNewSession() {
+function startNewSession() {
   // 新規セッション：完全にクリーンな状態で開始
-  // 過去のプロフィール・履歴を引き継がない
   state.userName = null;
   state.userReading = null;
   state.readerType = null;
@@ -992,7 +991,9 @@ async function startNewSession() {
   state.lifeFacts = [];
   state.chapterScores = {};
   state.sessionId = "local_" + Date.now();
-  state.sessionCount++;
+  // セッション番号は履歴の数+1（インクリメントではなく計算）
+  const sessions = getSessions();
+  state.sessionCount = sessions.length + 1;
   localStorage.setItem("kotonoha_session_count", String(state.sessionCount));
 
   showScreen("screen-chat");
@@ -1000,10 +1001,9 @@ async function startNewSession() {
   document.getElementById("chat-topic").textContent = `${i18n("session_label")}${state.sessionCount}${i18n("session_unit")}`;
   resetProgressMeter();
 
-  await unlockAudioOnce().catch(() => {});
-
+  // 最初のメッセージは即表示（awaitなし・TTS不要）
   onboardingStep = "ask_name";
-  await speakAIMessage(i18n("onboard_greeting"));
+  addMessage("ai", i18n("onboard_greeting"));
 }
 
 // Handle onboarding responses (intercept before normal AI call)
@@ -1185,7 +1185,7 @@ function thinkingDelay(startTime) {
 
 document.getElementById("send-btn").onclick = sendMessage;
 document.getElementById("start-new-btn").addEventListener("click", () => {
-  startNewSession().catch(e => console.error("startNewSession error:", e));
+  try { startNewSession(); } catch(e) { console.error("startNewSession error:", e); }
 });
 document.getElementById("chat-input").addEventListener("keydown", e => {
   if (e.key === "Enter" && !e.shiftKey && !isMobile()) { e.preventDefault(); sendMessage(); }
