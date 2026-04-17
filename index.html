@@ -447,19 +447,21 @@
   </div>
 
   <button class="new-chat-btn" onclick="startNewSession()">
-    今日も話しましょう
+    最初から始める
   </button>
+
+  <div id="resume-section" style="display:none;">
+    <div class="history-section-title">
+      <span>続きから話す</span>
+      <span id="history-count" style="color:var(--muted); font-size:0.75em;"></span>
+    </div>
+    <div id="dashboard-history" class="history-list"></div>
+  </div>
 
   <div class="chapter-progress" id="chapter-progress">
     <div class="chapter-progress-title">本の色づき</div>
     <div id="chapter-list"></div>
   </div>
-
-  <div class="history-section-title">
-    <span>過去の会話</span>
-    <span id="history-count" style="color:var(--muted); font-size:0.75em;"></span>
-  </div>
-  <div id="dashboard-history" class="history-list"></div>
 </section>
 
 <!-- ========== SETUP (First time) ========== -->
@@ -722,12 +724,16 @@ function getScoreLabel(score) {
 
 function renderSessionHistory() {
   const sessions = getSessions();
+  const resumeSection = document.getElementById("resume-section");
   const container = document.getElementById("dashboard-history");
-  document.getElementById("history-count").textContent = sessions.length ? `${sessions.length}回` : "";
+
   if (!sessions.length) {
-    container.innerHTML = `<div class="history-empty">まだ会話履歴がありません<br>「今日も話しましょう」から始めてください</div>`;
+    resumeSection.style.display = "none";
     return;
   }
+
+  resumeSection.style.display = "block";
+  document.getElementById("history-count").textContent = `${sessions.length}回`;
   container.innerHTML = sessions.slice().reverse().map((s, i) => {
     const dateStr = new Date(s.date).toLocaleDateString("ja-JP");
     const msgCount = s.messageCount || 0;
@@ -760,54 +766,30 @@ function deleteSessionLocal(idx) {
 // Onboarding state machine
 let onboardingStep = null; // null = not onboarding, "ask_name" | "ask_reader" | "done"
 
-function startNewSession() {
-  // 初回: プロフィール未設定 → 対話でオンボーディング
-  if (!state.userName) {
-    state.conversation = [];
-    state.sessionId = "local_" + Date.now();
-    showScreen("screen-chat");
-    document.getElementById("messages").innerHTML = "";
-    document.getElementById("chat-topic").textContent = "はじめまして";
-    resetProgressMeter();
-
-    onboardingStep = "ask_name";
-    speakAIMessage("はじめまして。私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？");
-    return;
-  }
-
-  // 通常セッション
-  state.sessionCount++;
-  localStorage.setItem("kotonoha_session_count", String(state.sessionCount));
+async function startNewSession() {
+  // 新規セッション：クリーンな状態で開始
   state.conversation = [];
   state.sessionId = "local_" + Date.now();
+  state.sessionCount++;
+  localStorage.setItem("kotonoha_session_count", String(state.sessionCount));
 
   showScreen("screen-chat");
   document.getElementById("messages").innerHTML = "";
   document.getElementById("chat-topic").textContent = `第${state.sessionCount}回`;
   resetProgressMeter();
 
-  // First message from Kotonoha
-  const phase = getPhase();
-  let firstMsg;
-  if (state.sessionCount === 1) {
-    firstMsg = `${state.userName}さん、こんにちは！\n\nまず一緒に、この本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\nざっくりで大丈夫です。`;
-  } else if (phase === 1) {
-    const lastSummary = state.sessionSummaries[state.sessionSummaries.length - 1];
-    const hook = lastSummary ? `\n\n前回は${lastSummary.topics?.[0] || "いろいろなこと"}について聞かせてもらいました。` : "";
-    firstMsg = `${state.userName}さん、こんにちは！${hook}\n\n今日はどんなお話を聞かせてもらえますか?`;
-  } else if (phase === 2) {
-    firstMsg = `${state.userName}さん、こんにちは！\n\nこれまでのお話から、本の大まかな流れが見えてきました。\n今日はその辺りも一緒に考えながら、お話を聞かせてください。`;
-  } else {
-    const weakest = getWeakestChapter();
-    firstMsg = `${state.userName}さん、こんにちは！\n\n本の色づきを見てみると、「${weakest.label}」のところがまだ少し薄いですね。\n\n今日はそのあたりの話を聞かせてもらえますか?\nそれとも、別に話したいことがありますか?`;
-  }
-  speakAIMessage(firstMsg);
+  // Audio unlockを先に試みる（失敗しても続行）
+  await unlockAudioOnce().catch(() => {});
+
+  const firstMsg = `こんにちは！私は「ことのは」、あなたの話を聞く記者です。\n\nこれから少しずつ、あなたの歩んできた道を一冊の本にしていきます。\n\nまず、お名前を教えていただけますか？`;
+
+  onboardingStep = "ask_name";
+  await speakAIMessage(firstMsg);
 }
 
 // Handle onboarding responses (intercept before normal AI call)
-function handleOnboarding(userText) {
+async function handleOnboarding(userText) {
   if (onboardingStep === "ask_name") {
-    // Extract name from response
     let name = userText.trim()
       .replace(/です[。．.]?$/g, "")
       .replace(/と申します[。．.]?$/g, "")
@@ -816,17 +798,16 @@ function handleOnboarding(userText) {
       .replace(/^名前は/g, "")
       .trim();
     if (!name || name.length > 20) {
-      speakAIMessage("すみません、お名前をもう一度教えていただけますか？");
-      return true; // handled
+      await speakAIMessage("すみません、お名前をもう一度教えていただけますか？");
+      return true;
     }
     state.userName = name;
     saveUserProfile();
     onboardingStep = "ask_reader";
-    speakAIMessage(`${name}さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
+    await speakAIMessage(`${name}さんですね。よろしくお願いします。\n\nこの本は、誰に向けて残したいですか？\nたとえば「家族に」「仕事の仲間に」「自分の記録として」——\nなんとなくでも大丈夫です。`);
     return true;
   }
   if (onboardingStep === "ask_reader") {
-    // Classify reader type from free text
     const text = userText.toLowerCase();
     let readerType = "undecided";
     if (/家族|息子|娘|孫|子供|妻|夫|嫁/.test(text)) readerType = "grandchildren";
@@ -837,9 +818,6 @@ function handleOnboarding(userText) {
     saveUserProfile();
     onboardingStep = null;
 
-    // Transition to first real session
-    state.sessionCount = 1;
-    localStorage.setItem("kotonoha_session_count", "1");
     document.getElementById("chat-topic").textContent = "第1回";
 
     const readerLabel = readerType === "grandchildren" ? "ご家族" :
@@ -847,13 +825,12 @@ function handleOnboarding(userText) {
                         readerType === "self" ? "ご自身の記録" : "";
     const readerAck = readerLabel ? `${readerLabel}に向けて——素敵ですね。\n\n` : "";
 
-    speakAIMessage(`${readerAck}では、まず一緒にこの本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。`);
+    await speakAIMessage(`${readerAck}では、まず一緒にこの本のイメージを考えましょう。\n\n${state.userName}さんの人生を本にするとしたら、どんなテーマが中心になりそうですか？\n\nたとえば……\n・仕事や事業の歩み\n・家族との物語\n・自分が大切にしてきた価値観\n・波乱万丈な人生そのもの\n\n何でも構いません。ざっくりで大丈夫です。`);
 
-    // Render dashboard greeting
     document.getElementById("greeting-text").textContent = `${state.userName}さんの自叙伝`;
     return true;
   }
-  return false; // not in onboarding
+  return false;
 }
 
 function getPhase() {
@@ -875,18 +852,9 @@ function getWeakestChapter() {
 // SYSTEM PROMPT (Option B: built in frontend)
 // ============================================================
 function buildSystemPrompt() {
-  const phase = getPhase();
-  const factsStr = state.lifeFacts.length
-    ? state.lifeFacts.map(f => `- ${f.kanji || f.reading} (${f.reading}): ${f.relation}`).join("\n")
-    : "(まだ確認済みの固有名詞はありません)";
-  const summariesStr = state.sessionSummaries.length
-    ? state.sessionSummaries.map((s, i) => `セッション${i + 1}: ${s.summary}`).join("\n")
-    : "(初回セッション)";
-  const scoresStr = CATEGORIES.map(c =>
-    `${c.label}: ${state.chapterScores[c.key] || 0}%`
-  ).join(", ");
+  const msgCount = state.conversation.filter(m => m.role === "user").length;
 
-  return `You are "Kotonoha", a warm and empathetic Japanese AI journalist specialized in autobiography creation. Always respond in Japanese only. You have deep listening skills like a professional journalist and narrative structure skills like an autobiography writer.
+  return `You are "Kotonoha", a warm and empathetic Japanese AI journalist specialized in autobiography creation. Always respond in Japanese only.
 
 CONVERSATION RULES:
 1. Ask only ONE question at a time. Never combine multiple questions.
@@ -896,31 +864,26 @@ CONVERSATION RULES:
 5. For emotional statements, show empathy first, then ask a follow-up question.
 6. Actively ask about sensory details ("What did it smell like at that time?").
 
-CURRENT PHASE: Phase ${phase}
-${phase === 1 ? "Goal-setting & Discovery phase: First, help the user define the vision for their book together — what themes, what tone, who it's for. Ask what kind of book they imagine. Then gradually start collecting stories. Never jump straight into 'tell me about your childhood'. Let the user lead the direction. Be collaborative, not interrogative." : ""}
-${phase === 2 ? "Chapter proposal phase: Based on collected stories, naturally propose a book structure. Co-create the table of contents with the user. Never force a structure — suggest and ask for feedback." : ""}
-${phase === 3 ? "Coverage tracking phase: Naturally guide toward low-score chapters, but never force. Remind the user of the vision they set in Phase 1." : ""}
+IMPORTANT CONTEXT RULES:
+- You only know what was said in THIS conversation (the messages you can see).
+- Do NOT assume you know anything about the user that wasn't said in this conversation.
+- If the user hasn't introduced themselves yet, do NOT use their name.
+- Do NOT claim progress has been made unless the user actually discussed topics in this conversation.
+- Never say "大まかな流れが見えてきました" unless the user actually outlined their book in this conversation.
+
+YOUR ROLE IN THIS SESSION:
+${msgCount < 3 ? "You are just getting started. Help the user define what kind of book they want to create. Ask about their vision — themes, tone, audience. Be collaborative. Do NOT jump into asking about childhood or specific life events yet." : "Continue the natural flow of conversation. Follow up on what the user has been telling you. Stay curious and warm."}
 
 USER INFO:
-Name: ${state.userName}
-Intended readers: ${state.readerType}
-Session number: ${state.sessionCount}
-
-CONFIRMED PROPER NOUNS:
-${factsStr}
-
-PAST SESSION SUMMARIES:
-${summariesStr}
-
-CURRENT COVERAGE STATUS:
-${scoresStr}
+Name: ${state.userName || "(not yet provided)"}
+Intended readers: ${state.readerType || "(not yet decided)"}
 
 FORBIDDEN:
-- Never say percentages aloud ("80% complete" etc.)
-- Never say chapter numbers numerically
+- Never fabricate facts or assume knowledge not in this conversation
+- Never say percentages aloud
 - No rapid-fire interrogation-style questions
 - No rushing expressions
-- No fabrication of facts`;
+- Never reference "past sessions" or "previous conversations" unless the user brings it up`;
 }
 
 // ============================================================
@@ -1014,8 +977,9 @@ async function sendMessage() {
   addMessage("user", text);
 
   // オンボーディング中はAI呼び出しせずローカル処理
-  if (onboardingStep && handleOnboarding(text)) {
-    return;
+  if (onboardingStep) {
+    const handled = await handleOnboarding(text);
+    if (handled) return;
   }
 
   state.isGenerating = true;
@@ -1221,12 +1185,21 @@ function resumeSession(idx) {
   if (!s) return;
   state.sessionId = s.id;
   state.sessionCount = s.sessionNum;
-  state.conversation = [];
+  // このセッションの会話だけをロード（他の履歴は含めない）
+  state.conversation = [...(s.conversation || [])];
   showScreen("screen-chat");
   document.getElementById("messages").innerHTML = "";
-  document.getElementById("chat-topic").textContent = `第${s.sessionNum}回`;
+  document.getElementById("chat-topic").textContent = `第${s.sessionNum}回（続き）`;
   resetProgressMeter();
-  for (const msg of s.conversation) addMessage(msg.role, msg.content);
+  // 画面に会話を表示（stateには既にpushされているのでaddMessageではなく直接描画）
+  for (const msg of state.conversation) {
+    const messages = document.getElementById("messages");
+    const msgDiv = document.createElement("div");
+    msgDiv.className = `msg msg-${msg.role === "ai" ? "ai" : "user"}`;
+    msgDiv.innerHTML = `<div class="msg-bubble">${escapeHtml(msg.content)}</div>`;
+    messages.appendChild(msgDiv);
+  }
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
   localAnalyzeProgress();
   showToast(`第${s.sessionNum}回の会話を復元しました`);
 }
