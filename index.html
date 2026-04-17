@@ -9,7 +9,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-title" content="ことのは">
-<title>ことのは自叙伝</title>
+<title>ことのは</title>
 <style>
   :root {
     --bg: #f8f1e4; --bg2: #f0e6d2; --accent: #8b6914; --accent2: #5b3d8f;
@@ -453,9 +453,15 @@
   <div class="dash-header">
     <div class="logo-icon">&#x1F4D6;</div>
     <div class="greeting">
-      <h1><span data-i18n="app_title">ことのは自叙伝</span> <span class="version-badge" id="app-version">v0.2.1</span></h1>
+      <h1>ことのは</h1>
       <p id="greeting-text" data-i18n="tagline">あなたの声が、本になる</p>
     </div>
+  </div>
+
+  <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-bottom:20px;">
+    <button onclick="toggleTTSMute()" id="dash-tts-toggle" style="background:var(--card); border:2px solid var(--border); color:var(--text); width:56px; height:56px; border-radius:50%; font-size:1.5em; cursor:pointer; display:flex; align-items:center; justify-content:center;">🔊</button>
+    <button onclick="cycleTTSSpeed()" id="dash-tts-speed" style="background:var(--card); border:2px solid var(--border); color:var(--text); width:56px; height:56px; border-radius:50%; font-size:0.85em; font-weight:bold; cursor:pointer; font-family:inherit; display:flex; align-items:center; justify-content:center;">1.0x</button>
+    <button onclick="changeLang()" id="change-lang-btn" style="background:var(--card); border:2px solid var(--border); color:var(--text); width:56px; height:56px; border-radius:50%; font-size:1.5em; cursor:pointer; display:flex; align-items:center; justify-content:center;">🌐</button>
   </div>
 
   <button class="new-chat-btn" id="start-new-btn" data-i18n="start_new">
@@ -470,17 +476,7 @@
     <div id="dashboard-history" class="history-list"></div>
   </div>
 
-  <div class="chapter-progress" id="chapter-progress">
-    <div class="chapter-progress-title" data-i18n="book_progress">本の色づき</div>
-    <div id="chapter-list"></div>
-  </div>
-
-  <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap;">
-    <button onclick="toggleTTSMute()" id="dash-tts-toggle" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:20px; font-size:0.82em; cursor:pointer; font-family:inherit;">🔊</button>
-    <button onclick="cycleTTSSpeed()" id="dash-tts-speed" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 14px; border-radius:20px; font-size:0.78em; cursor:pointer; font-family:inherit;">1.0x</button>
-    <button onclick="changeLang()" id="change-lang-btn" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:20px; font-size:0.78em; cursor:pointer; font-family:inherit;">🌐</button>
-    <span style="color:var(--muted); font-size:0.7em;" id="current-version"></span>
-  </div>
+  <div style="text-align:center; margin-top:24px; color:var(--muted); font-size:0.68em;" id="current-version"></div>
 </section>
 
 <!-- ========== SETUP (First time) ========== -->
@@ -584,7 +580,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const APP_VERSION = "0.3.2";
+const APP_VERSION = "0.4.0";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -606,7 +602,7 @@ const LANGS = {
 
 const I18N = {
   ja: {
-    app_title: "ことのは自叙伝",
+    app_title: "ことのは",
     tagline: "あなたの声が、本になる",
     start_new: "最初から始める",
     resume: "続きから話す",
@@ -681,7 +677,7 @@ const I18N = {
     cat_oneword: "人生を一言で表すと",
   },
   en: {
-    app_title: "Kotonoha Memoir",
+    app_title: "Kotonoha",
     tagline: "Your voice becomes a book",
     start_new: "Start New",
     resume: "Continue",
