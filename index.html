@@ -166,10 +166,11 @@
 
   /* ========== Chat ========== */
   .chat-header {
-    padding: 14px 16px;
+    padding: 10px 12px;
     background: rgba(248,241,228,0.96); backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    min-height: 0; flex-wrap: nowrap;
   }
   .chat-header .back-btn {
     background: transparent; border: 1px solid var(--accent2);
@@ -182,16 +183,18 @@
     font-size: 1.4em; background: linear-gradient(135deg, var(--gold), var(--accent2));
     color: #fff;
   }
-  .chat-header .info { flex: 1; min-width: 0; }
-  .chat-header .info-title { font-size: 0.78em; color: var(--muted); }
+  .chat-header .info { flex: 1; min-width: 0; overflow: hidden; }
+  .chat-header .info-title { font-size: 0.72em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chat-header .info-topic {
-    font-weight: bold; color: var(--accent2); font-size: 0.95em;
+    font-weight: bold; color: var(--accent2); font-size: 0.85em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .chat-header .chat-icon { width: 32px; height: 32px; font-size: 1.1em; }
   .chat-header .end-btn {
     background: var(--gold); color: #fff; border: none;
-    padding: 8px 12px; border-radius: 18px; font-size: 0.8em;
+    padding: 6px 10px; border-radius: 18px; font-size: 0.72em;
     font-weight: bold; cursor: pointer; flex-shrink: 0; font-family: inherit;
+    white-space: nowrap;
   }
   .chat-messages { flex: 1; overflow-y: auto; padding: 20px 16px; -webkit-overflow-scrolling: touch; }
   .msg { margin-bottom: 14px; max-width: 85%; animation: slideIn 0.3s ease-out; }
@@ -533,7 +536,7 @@
     <div class="progress-detail" id="progress-detail"></div>
   </div>
   <div class="chat-messages" id="messages"></div>
-  <div class="mode-bar" id="mode-bar-response">
+  <div class="mode-bar" id="mode-bar-response" style="display:none;">
     <span class="mode-label" data-i18n="response_mode">ことのはの応答</span>
     <div class="mode-group">
       <button type="button" class="mode-chip" data-resp="voice_text" onclick="setResponseMode('voice_text')" data-i18n="voice_text">音声+文字</button>
@@ -541,7 +544,7 @@
     </div>
     <button type="button" class="mode-speed" id="tts-speed" onclick="cycleTTSSpeed()"></button>
   </div>
-  <div class="mode-bar" id="mode-bar-input">
+  <div class="mode-bar" id="mode-bar-input" style="display:none;">
     <span class="mode-label" data-i18n="input_mode">わたしの入力</span>
     <div class="mode-group">
       <button type="button" class="mode-chip" data-input="voice" onclick="setInputMode('voice')" data-i18n="voice_input">声で話す</button>
@@ -553,7 +556,7 @@
     <textarea id="chat-input" data-i18n-placeholder="placeholder" placeholder="話したいことを書いてください" rows="1"></textarea>
     <button class="send-btn" id="send-btn">&#x25B6;</button>
   </div>
-  <div class="footer-tip" data-i18n="footer_tip">疲れたら「今日はここまで」で終了できます</div>
+  <div class="footer-tip" data-i18n="footer_tip" style="display:none;">疲れたら「今日はここまで」で終了できます</div>
 </section>
 
 <!-- ========== KANJI CONFIRM OVERLAY ========== -->
@@ -907,7 +910,7 @@ function renderChapterProgress() {
     const cls = score === 0 ? "score-0" : score < 30 ? "score-low" : score < 60 ? "score-mid" : score < 90 ? "score-high" : "score-max";
     return `<div class="chapter-item">
       <div class="chapter-color" style="background:${color};"></div>
-      <span class="chapter-name">${t(cat.labelKey)}</span>
+      <span class="chapter-name">${i18n(cat.labelKey)}</span>
       <span class="chapter-score ${cls}">${score > 0 ? getScoreLabel(score) : i18n("score_none")}</span>
     </div>`;
   }).join("");
