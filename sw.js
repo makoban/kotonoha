@@ -1,4 +1,4 @@
-const CACHE_NAME = "kotonoha-0.6.0";
+const CACHE_NAME = "kotonoha-0.7.0";
 const ASSETS = [
   "/kotonoha/",
   "/kotonoha/index.html",
