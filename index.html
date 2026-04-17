@@ -454,7 +454,7 @@
   <div class="dash-header">
     <div class="logo-icon">&#x1F4D6;</div>
     <div class="greeting">
-      <h1><span data-i18n="app_title">ことのは自叙伝</span> <span class="version-badge">MVP 0.1</span></h1>
+      <h1><span data-i18n="app_title">ことのは自叙伝</span> <span class="version-badge" id="app-version">v0.2.0</span></h1>
       <p id="greeting-text" data-i18n="tagline">あなたの声が、本になる</p>
     </div>
   </div>
@@ -474,6 +474,11 @@
   <div class="chapter-progress" id="chapter-progress">
     <div class="chapter-progress-title" data-i18n="book_progress">本の色づき</div>
     <div id="chapter-list"></div>
+  </div>
+
+  <div style="text-align:center; margin-top:16px;">
+    <button onclick="changeLang()" style="background:transparent; border:1px solid var(--border); color:var(--muted); padding:8px 18px; border-radius:20px; font-size:0.78em; cursor:pointer; font-family:inherit;" id="change-lang-btn">🌐</button>
+    <span style="color:var(--muted); font-size:0.7em; margin-left:6px;" id="current-version"></span>
   </div>
 </section>
 
@@ -591,6 +596,7 @@
 // ============================================================
 // CONFIG
 // ============================================================
+const APP_VERSION = "0.2.0";
 const API_BASE = "https://risa-studio-api.ai-fudosan.workers.dev"; // TTS専用
 const KOTONOHA_API = "https://kotonoha-api.ai-fudosan.workers.dev/api/chat";
 
@@ -1864,7 +1870,11 @@ function renderLangSelect() {
 
 function chooseLang(code) {
   setLang(code);
-  // ページリロードで確実にダッシュボード表示
+  location.reload();
+}
+
+function changeLang() {
+  localStorage.removeItem("kotonoha_lang");
   location.reload();
 }
 
@@ -1882,6 +1892,11 @@ if (!currentLang) {
   applyI18N();
   showScreen("screen-dashboard");
 }
+// バージョン表示
+const verEl = document.getElementById("current-version");
+if (verEl) verEl.textContent = "v" + APP_VERSION;
+const langBtn = document.getElementById("change-lang-btn");
+if (langBtn && currentLang) langBtn.textContent = "🌐 " + (LANGS[currentLang]?.name || currentLang);
 </script>
 </body>
 </html>
